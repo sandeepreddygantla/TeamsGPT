@@ -104,29 +104,29 @@ def get_access_token():
         return None
 
 # Global variable to store current model selection
-current_model_name = "gpt-4o"  # Default model
+current_model_name = "gpt-5"  # Default model
 
 # Available models configuration
 AVAILABLE_MODELS = {
-    "gpt-4o": {
-        "name": "GPT-4o",
-        "model": "gpt-4o",
-        "temperature": 0.5,
+    "gpt-5": {
+        "name": "GPT-5",
+        "model": "gpt-4o",  # Map to closest OpenAI equivalent for testing
+        "temperature": 0,
         "max_tokens": 16000,
-        "description": "Most capable model for complex reasoning"
+        "description": "Most advanced model for complex reasoning"
     },
-    "gpt-4o-mini": {
-        "name": "GPT-4o Mini",
-        "model": "gpt-4o-mini",
-        "temperature": 0.5,
+    "gpt-4.1": {
+        "name": "GPT-4.1",
+        "model": "gpt-4o-mini",  # Map to closest OpenAI equivalent for testing
+        "temperature": 0,
         "max_tokens": 16000,
-        "description": "Faster and more cost-effective model"
+        "description": "Enhanced GPT-4 model for balanced performance"
     }
 }
 
 def get_current_model_config():
     """Get the current model configuration"""
-    return AVAILABLE_MODELS.get(current_model_name, AVAILABLE_MODELS["gpt-4o"])
+    return AVAILABLE_MODELS.get(current_model_name, AVAILABLE_MODELS["gpt-5"])
 
 def set_current_model(model_name: str):
     """Set the current model globally"""
@@ -165,7 +165,7 @@ def get_llm(access_token: str = None, model_name: str = None):
             return None
         
         # Use provided model_name or current global model
-        model_config = AVAILABLE_MODELS.get(model_name or current_model_name, AVAILABLE_MODELS["gpt-4o"])
+        model_config = AVAILABLE_MODELS.get(model_name or current_model_name, AVAILABLE_MODELS["gpt-5"])
         
         return ChatOpenAI(
             model=model_config["model"],

@@ -62,7 +62,8 @@ Two parallel implementations:
 - `src/services/` - Business logic: AuthService, ChatService, DocumentService, UploadService
 - `src/api/` - Flask blueprints: auth_routes, chat_routes, document_routes, model_routes
 - `src/ai/` - LLM operations and query processing
-- `azure_meeting_processor_reference.py` - Azure deployment variant
+- `azure_meeting_processor_reference.py` - Azure deployment variant with GPT-5/GPT-4.1
+- `AZURE_DEPLOYMENT_GUIDE.md` - Step-by-step deployment instructions for organization
 
 ### Key Design Patterns
 - **Global Variable Pattern:** All AI operations use globals from `meeting_processor.py`
@@ -92,19 +93,24 @@ else:
 **NEVER instantiate directly:** `ChatOpenAI()`, `OpenAIEmbeddings()`, `AzureChatOpenAI()`
 
 ### Model Selection System
-Dynamic LLM model switching via UI dropdown:
-- **Available Models:** Configured in `AVAILABLE_MODELS` dict in `meeting_processor.py`
+Dynamic LLM model switching via UI dropdown with organization-specific models:
+- **Available Models:** GPT-5 and GPT-4.1 configured in `AVAILABLE_MODELS` dict
 - **Model Persistence:** Saved to localStorage, restored on page refresh
-- **Global Model Variable:** `current_model_name` tracks active model
+- **Global Model Variable:** `current_model_name` tracks active model (default: "gpt-5")
 - **API Endpoints:** `/api/model/available`, `/api/model/current`, `/api/model/switch`
 - **UI Integration:** Model selector in header with real-time status indicator
+- **Azure Deployment:** `azure_meeting_processor_reference.py` contains organization-specific Azure configuration
 
 ```python
 # Model switching functions
-set_current_model(model_name)      # Switch active model globally
+set_current_model(model_name)      # Switch active model globally (gpt-5, gpt-4.1)
 get_current_model_name()           # Get current model
 get_current_model_config()         # Get current model configuration
 ```
+
+**Organization Models:**
+- **GPT-5:** Most advanced model for complex reasoning
+- **GPT-4.1:** Enhanced GPT-4 model for balanced performance
 
 ### Environment Switching Protocol
 Modify only these functions in `meeting_processor.py`:

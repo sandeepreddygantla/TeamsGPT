@@ -12,33 +12,33 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Global variable to store current model selection
-current_model_name = "gpt-4o"  # Default model
+current_model_name = "gpt-5"  # Default model
 
-# Available Azure models configuration
+# Available Azure models configuration for your organization
 AVAILABLE_MODELS = {
-    "gpt-4o": {
-        "name": "GPT-4o",
-        "azure_deployment": "gpt-4o_2024-05-13",
-        "model": "gpt-4o",
+    "gpt-5": {
+        "name": "GPT-5",
+        "azure_deployment": "gpt-5_2025-08-07",
+        "model": "gpt-5",
         "api_version": "2025-01-01-preview",
-        "temperature": 0.5,
+        "temperature": 0,
         "max_tokens": 16000,
-        "description": "Most capable model for complex reasoning"
+        "description": "Most advanced model for complex reasoning"
     },
-    "gpt-4o-mini": {
-        "name": "GPT-4o Mini", 
-        "azure_deployment": "gpt-4o-mini_2024-07-18",  # Adjust deployment name as per your Azure setup
-        "model": "gpt-4o-mini",
+    "gpt-4.1": {
+        "name": "GPT-4.1", 
+        "azure_deployment": "gpt-4.1_2025-04-14",
+        "model": "gpt-4.1",
         "api_version": "2025-01-01-preview",
-        "temperature": 0.5,
+        "temperature": 0,
         "max_tokens": 16000,
-        "description": "Faster and more cost-effective model"
+        "description": "Enhanced GPT-4 model for balanced performance"
     }
 }
 
 def get_current_model_config():
     """Get the current model configuration"""
-    return AVAILABLE_MODELS.get(current_model_name, AVAILABLE_MODELS["gpt-4o"])
+    return AVAILABLE_MODELS.get(current_model_name, AVAILABLE_MODELS["gpt-5"])
 
 def set_current_model(model_name: str):
     """Set the current model globally"""
@@ -102,13 +102,13 @@ def get_llm(access_token: str, model_name: str = None):
             return None
         
         # Use provided model_name or current global model
-        model_config = AVAILABLE_MODELS.get(model_name or current_model_name, AVAILABLE_MODELS["gpt-4o"])
+        model_config = AVAILABLE_MODELS.get(model_name or current_model_name, AVAILABLE_MODELS["gpt-5"])
         
         return AzureChatOpenAI(
             azure_deployment=model_config["azure_deployment"],
             model=model_config["model"],
             api_version=model_config["api_version"],
-            azure_endpoint="https://api.uhg.com/api/cloud/api-management/api-gateway/1.0",
+            azure_endpoint="https://api.uhg.com/api/cloud/api-management/ai-gateway/1.0",
             openai_api_type="azure_ad",
             validate_base_url=False,
             azure_ad_token=access_token,
@@ -147,8 +147,40 @@ def get_embedding_model(access_token: str):
         logger.error(f"Error creating Azure embedding model: {e}")
         return None
 
-# Instructions for deployment:
-# 1. Replace the corresponding functions in meeting_processor.py with these Azure versions
-# 2. Ensure AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and AZURE_PROJECT_ID are set in your environment
-# 3. Update the AVAILABLE_MODELS dictionary to match your Azure deployment names
-# 4. The model switching functionality will work the same way as the OpenAI version
+# =====================================
+# DEPLOYMENT INSTRUCTIONS FOR ORGANIZATION
+# =====================================
+
+# Step 1: Replace Functions in meeting_processor.py
+# Replace these exact functions with the Azure versions above:
+# - get_access_token()
+# - get_llm()
+# - get_embedding_model()
+# - AVAILABLE_MODELS dictionary
+# - current_model_name default value
+
+# Step 2: Environment Variables
+# Set these environment variables in your organization:
+# AZURE_CLIENT_ID=your_azure_client_id
+# AZURE_CLIENT_SECRET=your_azure_client_secret  
+# AZURE_PROJECT_ID=your_azure_project_id
+
+# Step 3: Verify Azure Deployment Names
+# Ensure these deployment names match your Azure setup:
+# - gpt-5_2025-08-07 (for GPT-5)
+# - gpt-4.1_2025-04-14 (for GPT-4.1)
+# - text-embedding-3-large_1 (for embeddings)
+
+# Step 4: Update Frontend Default (Optional)
+# In templates/chat.html, line 76:
+# Change: <span class="model-name" id="current-model-name">GPT-5</span>
+
+# Step 5: Test the Deployment
+# 1. Start the application
+# 2. Open browser console and run: testModelFeatures()
+# 3. Verify both models appear in dropdown
+# 4. Test switching between GPT-5 and GPT-4.1
+# 5. Confirm chat responses show correct model names
+
+# Note: All model switching, persistence, and confirmation features will work
+# identically to the OpenAI version with these Azure models.

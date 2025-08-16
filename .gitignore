@@ -49,3 +49,4 @@ sessions.db
 /logs
 Document fulfillment.drawio
 flask_app.zip
+AZURE_DEPLOYMENT_GUIDE.md
