@@ -100,11 +100,26 @@ def create_chat_blueprint(base_path: str, chat_service: ChatService) -> Blueprin
             logger.info("[SEND] Sending response to client...")
             logger.info("=" * 80)
             
+            # Get current model info for response
+            try:
+                from meeting_processor import get_current_model_name, get_current_model_config
+                current_model = get_current_model_name()
+                model_config = get_current_model_config()
+                model_info = {
+                    'id': current_model,
+                    'name': model_config['name'],
+                    'description': model_config['description']
+                }
+            except Exception as e:
+                logger.warning(f"Could not get model info: {e}")
+                model_info = {'id': 'unknown', 'name': 'Unknown Model', 'description': 'Model info unavailable'}
+            
             return jsonify({
                 'success': True,
                 'response': response,
                 'follow_up_questions': follow_up_questions,
-                'timestamp': timestamp
+                'timestamp': timestamp,
+                'model_info': model_info
             })
             
         except Exception as e:

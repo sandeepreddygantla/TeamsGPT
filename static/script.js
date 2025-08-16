@@ -28,8 +28,14 @@ let currentMentionType = 'document';
 const STORAGE_KEYS = {
     CONVERSATIONS: 'uhg_conversations',
     CURRENT_ID: 'uhg_current_conversation_id',
-    COUNTER: 'uhg_conversation_counter'
+    COUNTER: 'uhg_conversation_counter',
+    CURRENT_MODEL: 'uhg_current_model'
 };
+
+// Model selector variables
+let availableModels = [];
+let currentModel = null;
+let isModelDropdownOpen = false;
 
 // Configure marked.js for robust Markdown parsing
 function initializeMarkdownParser() {
@@ -242,6 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load persisted data and initialize UI
     loadPersistedDataAndInitializeUI();
     
+    // Initialize model selector (with delay to ensure DOM is fully loaded)
+    setTimeout(() => {
+        initializeModelSelector();
+    }, 100);
+    
     // App initialization completed - stats and data already loaded above
     
     // Setup auto-save
@@ -397,7 +408,7 @@ function loadConversationUI() {
     
     // Add conversations from history
     conversationHistory.forEach((msg, index) => {
-        addMessageToUI(msg.role, msg.content, false); // false = don't update history
+        addMessageToUI(msg.role, msg.content, false, msg.model_info); // false = don't update history
     });
     
     // Scroll to bottom after loading all messages
@@ -583,11 +594,12 @@ async function sendMessage() {
             const data = await response.json();
             if (data.success) {
                 // Add assistant response to UI and history
-                addMessageToUI('assistant', data.response, true);
+                addMessageToUI('assistant', data.response, true, data.model_info);
                 conversationHistory.push({
                     role: 'assistant', 
                     content: data.response, 
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    model_info: data.model_info
                 });
                 
                 // Add follow-up questions if available
@@ -613,7 +625,7 @@ async function sendMessage() {
 }
 
 // Updated addMessageToUI function with better history management
-function addMessageToUI(sender, content, updateHistory = true) {
+function addMessageToUI(sender, content, updateHistory = true, modelInfo = null) {
     const messagesArea = document.getElementById('messages-area');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
@@ -673,6 +685,14 @@ function addMessageToUI(sender, content, updateHistory = true) {
         actionsDiv.appendChild(dislikeBtn);
         actionsDiv.appendChild(copyBtn);
         actionsDiv.appendChild(regenerateBtn);
+        
+        // Add model info if provided
+        if (modelInfo) {
+            const modelInfoDiv = document.createElement('div');
+            modelInfoDiv.className = 'message-model-info';
+            modelInfoDiv.innerHTML = `<span class="model-indicator">🤖 ${modelInfo.name}</span>`;
+            messageContent.appendChild(modelInfoDiv);
+        }
         
         messageContent.appendChild(actionsDiv);
     }
@@ -2717,11 +2737,12 @@ function regenerateResponse() {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success) {
-                        addMessageToUI('assistant', data.response, true);
+                        addMessageToUI('assistant', data.response, true, data.model_info);
                         conversationHistory.push({
                             role: 'assistant', 
                             content: data.response, 
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            model_info: data.model_info
                         });
                         saveCurrentConversationToPersistentStorage();
                     }
@@ -5155,3 +5176,378 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+// ===============================
+// Model Selector Functions
+// ===============================
+
+// Initialize model selector
+async function initializeModelSelector() {
+    console.log('[ModelSelector] Initializing model selector...');
+    
+    // Check if model selector elements exist
+    const modelSelector = document.getElementById('model-selector');
+    const modelDropdown = document.getElementById('model-dropdown');
+    const currentModelName = document.getElementById('current-model-name');
+    
+    if (!modelSelector || !modelDropdown || !currentModelName) {
+        console.warn('[ModelSelector] Model selector elements not found in DOM, skipping initialization');
+        return;
+    }
+    
+    try {
+        await loadAvailableModels();
+        await loadCurrentModel();
+        
+        // Check if there's a saved model preference and restore it
+        const savedModel = loadSavedModel();
+        if (savedModel && savedModel !== currentModel && availableModels.some(m => m.id === savedModel)) {
+            console.log('[ModelSelector] Restoring saved model:', savedModel);
+            await switchModel(savedModel, false); // Don't save again to avoid loop
+        }
+        
+        setupModelSelectorEventListeners();
+        console.log('[ModelSelector] Model selector initialized successfully');
+    } catch (error) {
+        console.error('[ModelSelector] Error initializing model selector:', error);
+        updateModelStatus('error', 'Failed to load models');
+    }
+}
+
+// Load available models from API
+async function loadAvailableModels() {
+    try {
+        console.log('[ModelSelector] Loading available models...');
+        const url = `${window.APP_CONFIG?.basePath || '/meetingsai'}/api/model/available`;
+        console.log('[ModelSelector] Fetching from URL:', url);
+        
+        const response = await fetch(url);
+        console.log('[ModelSelector] Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[ModelSelector] Response error:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('[ModelSelector] Response data:', data);
+        
+        if (data.success) {
+            availableModels = data.models;
+            currentModel = data.current_model;
+            console.log('[ModelSelector] Available models:', availableModels);
+            console.log('[ModelSelector] Current model:', currentModel);
+            populateModelDropdown();
+        } else {
+            throw new Error(data.error || 'Failed to load available models');
+        }
+    } catch (error) {
+        console.error('[ModelSelector] Error loading available models:', error);
+        throw error;
+    }
+}
+
+// Load current model from API
+async function loadCurrentModel() {
+    try {
+        const response = await fetch(`${window.APP_CONFIG?.basePath || '/meetingsai'}/api/model/current`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            currentModel = data.current_model;
+            updateModelDisplay(data.model_info);
+            updateModelStatus('ready', 'Ready');
+            updateInputPlaceholder(data.model_info.name);
+        } else {
+            throw new Error(data.error || 'Failed to load current model');
+        }
+    } catch (error) {
+        console.error('[ModelSelector] Error loading current model:', error);
+        throw error;
+    }
+}
+
+// Populate model dropdown with available options
+function populateModelDropdown() {
+    console.log('[ModelSelector] Populating dropdown with models:', availableModels);
+    const dropdown = document.getElementById('model-dropdown');
+    if (!dropdown) {
+        console.error('[ModelSelector] Model dropdown element not found');
+        return;
+    }
+    
+    dropdown.innerHTML = '';
+    
+    if (!availableModels || availableModels.length === 0) {
+        console.warn('[ModelSelector] No available models to populate');
+        dropdown.innerHTML = '<div class="model-option">No models available</div>';
+        return;
+    }
+    
+    availableModels.forEach(model => {
+        console.log('[ModelSelector] Adding model option:', model);
+        const option = document.createElement('div');
+        option.className = `model-option ${model.id === currentModel ? 'selected' : ''}`;
+        option.dataset.modelId = model.id;
+        
+        option.innerHTML = `
+            <div class="model-option-name">${model.name}</div>
+            <div class="model-option-desc">${model.description}</div>
+        `;
+        
+        option.addEventListener('click', () => switchModel(model.id));
+        dropdown.appendChild(option);
+    });
+    
+    console.log('[ModelSelector] Dropdown populated with', availableModels.length, 'models');
+}
+
+// Update model display
+function updateModelDisplay(modelInfo) {
+    const modelNameElement = document.getElementById('current-model-name');
+    if (modelNameElement && modelInfo) {
+        modelNameElement.textContent = modelInfo.name;
+    }
+}
+
+// Update model status indicator
+function updateModelStatus(status, text) {
+    const statusIndicator = document.querySelector('.status-indicator');
+    const statusText = document.querySelector('.status-text');
+    
+    if (statusIndicator) {
+        statusIndicator.className = `status-indicator ${status}`;
+    }
+    
+    if (statusText) {
+        statusText.textContent = text;
+    }
+    
+    // Show user-friendly error message if failed to load
+    if (status === 'error' && text === 'Failed to load models') {
+        const modelDisplay = document.querySelector('.model-display');
+        if (modelDisplay) {
+            // Update the displayed text to show it's not available
+            const modelNameElement = document.getElementById('current-model-name');
+            if (modelNameElement) {
+                modelNameElement.textContent = 'N/A';
+            }
+        }
+    }
+}
+
+// Switch to a different model
+async function switchModel(modelId, shouldSave = true) {
+    if (modelId === currentModel) {
+        toggleModelDropdown(); // Close dropdown if same model selected
+        return;
+    }
+    
+    console.log(`[ModelSelector] Switching to model: ${modelId}`);
+    updateModelStatus('switching', 'Switching...');
+    
+    try {
+        const response = await fetch(`${window.APP_CONFIG?.basePath || '/meetingsai'}/api/model/switch`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model_id: modelId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            currentModel = data.current_model;
+            updateModelDisplay(data.model_info);
+            updateModelStatus('ready', 'Ready');
+            populateModelDropdown(); // Update selected state
+            
+            // Save model preference to localStorage
+            if (shouldSave) {
+                saveCurrentModel(modelId);
+            }
+            
+            // Show success notification with enhanced animation
+            showModelSwitchConfirmation(data.model_info.name);
+            showNotification(`Switched to ${data.model_info.name}`, 'success');
+            
+            console.log(`[ModelSelector] Successfully switched to model: ${modelId}`);
+        } else {
+            throw new Error(data.error || 'Failed to switch model');
+        }
+    } catch (error) {
+        console.error('[ModelSelector] Error switching model:', error);
+        updateModelStatus('error', 'Switch failed');
+        showNotification(`Failed to switch model: ${error.message}`, 'error');
+    }
+    
+    toggleModelDropdown(); // Close dropdown
+}
+
+// Toggle model dropdown
+function toggleModelDropdown() {
+    const selector = document.getElementById('model-selector');
+    if (!selector) return;
+    
+    isModelDropdownOpen = !isModelDropdownOpen;
+    
+    if (isModelDropdownOpen) {
+        selector.classList.add('open');
+        // Close dropdown when clicking outside
+        document.addEventListener('click', handleModelDropdownOutsideClick);
+    } else {
+        selector.classList.remove('open');
+        document.removeEventListener('click', handleModelDropdownOutsideClick);
+    }
+}
+
+// Handle clicking outside model dropdown
+function handleModelDropdownOutsideClick(event) {
+    const selector = document.getElementById('model-selector');
+    if (selector && !selector.contains(event.target)) {
+        toggleModelDropdown();
+    }
+}
+
+// Setup model selector event listeners
+function setupModelSelectorEventListeners() {
+    // Close dropdown on ESC key
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isModelDropdownOpen) {
+            toggleModelDropdown();
+        }
+    });
+}
+
+// Get current model for other parts of the application
+function getCurrentModel() {
+    return currentModel;
+}
+
+// Save current model to localStorage
+function saveCurrentModel(modelId) {
+    try {
+        saveToLocalStorage(STORAGE_KEYS.CURRENT_MODEL, modelId);
+        console.log('[ModelSelector] Saved model to localStorage:', modelId);
+    } catch (error) {
+        console.error('[ModelSelector] Error saving model to localStorage:', error);
+    }
+}
+
+// Load saved model from localStorage
+function loadSavedModel() {
+    try {
+        const savedModel = getFromLocalStorage(STORAGE_KEYS.CURRENT_MODEL, null);
+        console.log('[ModelSelector] Loaded saved model from localStorage:', savedModel);
+        return savedModel;
+    } catch (error) {
+        console.error('[ModelSelector] Error loading saved model from localStorage:', error);
+        return null;
+    }
+}
+
+// Show enhanced visual confirmation when model switches
+function showModelSwitchConfirmation(modelName) {
+    // Add a glow effect to the model selector temporarily
+    const modelSelector = document.getElementById('model-selector');
+    if (modelSelector) {
+        modelSelector.style.animation = 'modelSwitchGlow 0.6s ease-in-out';
+        setTimeout(() => {
+            modelSelector.style.animation = '';
+        }, 600);
+    }
+    
+    // Update the input placeholder to show current model
+    updateInputPlaceholder(modelName);
+}
+
+// Update chat input placeholder to show current model
+function updateInputPlaceholder(modelName) {
+    const messageInput = document.getElementById('message-input');
+    if (messageInput) {
+        messageInput.placeholder = `Ask ${modelName} about your documents...`;
+    }
+}
+
+// Test function for debugging (call from browser console)
+async function testModelAPI() {
+    console.log('Testing Model API...');
+    
+    try {
+        // Test available models endpoint
+        const availableUrl = `${window.APP_CONFIG?.basePath || '/meetingsai'}/api/model/available`;
+        console.log('Testing available models URL:', availableUrl);
+        const availableResponse = await fetch(availableUrl);
+        console.log('Available models response:', availableResponse.status, await availableResponse.json());
+        
+        // Test current model endpoint
+        const currentUrl = `${window.APP_CONFIG?.basePath || '/meetingsai'}/api/model/current`;
+        console.log('Testing current model URL:', currentUrl);
+        const currentResponse = await fetch(currentUrl);
+        console.log('Current model response:', currentResponse.status, await currentResponse.json());
+        
+    } catch (error) {
+        console.error('Model API test failed:', error);
+    }
+}
+
+// Comprehensive test function for all model features
+async function testModelFeatures() {
+    console.log('🧪 Testing Model Features...');
+    
+    // Test 1: Check if model selector elements exist
+    console.log('1. Testing DOM elements...');
+    const modelSelector = document.getElementById('model-selector');
+    const modelDropdown = document.getElementById('model-dropdown');
+    const currentModelName = document.getElementById('current-model-name');
+    const statusIndicator = document.querySelector('.status-indicator');
+    
+    console.log('✓ Model selector elements:', {
+        selector: !!modelSelector,
+        dropdown: !!modelDropdown,
+        nameDisplay: !!currentModelName,
+        statusIndicator: !!statusIndicator
+    });
+    
+    // Test 2: Check API endpoints
+    console.log('2. Testing API endpoints...');
+    await testModelAPI();
+    
+    // Test 3: Check localStorage persistence
+    console.log('3. Testing localStorage...');
+    const savedModel = loadSavedModel();
+    console.log('Saved model in localStorage:', savedModel);
+    
+    // Test 4: Check current state
+    console.log('4. Testing current state...');
+    console.log('Available models:', availableModels);
+    console.log('Current model:', currentModel);
+    
+    // Test 5: Test model switching (if available)
+    if (availableModels.length >= 2) {
+        console.log('5. Testing model switching...');
+        const otherModel = availableModels.find(m => m.id !== currentModel);
+        if (otherModel) {
+            console.log(`Switching from ${currentModel} to ${otherModel.id}...`);
+            await switchModel(otherModel.id);
+            
+            // Wait a moment then switch back
+            setTimeout(async () => {
+                console.log(`Switching back to ${currentModel}...`);
+                await switchModel(currentModel);
+            }, 2000);
+        }
+    }
+    
+    console.log('🎉 Model features test completed!');
+}

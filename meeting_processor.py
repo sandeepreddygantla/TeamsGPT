@@ -103,13 +103,59 @@ def get_access_token():
         # Fallback to OpenAI mode
         return None
 
-# --- OpenAI LLM Client ---
+# Global variable to store current model selection
+current_model_name = "gpt-4o"  # Default model
+
+# Available models configuration
+AVAILABLE_MODELS = {
+    "gpt-4o": {
+        "name": "GPT-4o",
+        "model": "gpt-4o",
+        "temperature": 0.5,
+        "max_tokens": 16000,
+        "description": "Most capable model for complex reasoning"
+    },
+    "gpt-4o-mini": {
+        "name": "GPT-4o Mini",
+        "model": "gpt-4o-mini",
+        "temperature": 0.5,
+        "max_tokens": 16000,
+        "description": "Faster and more cost-effective model"
+    }
+}
+
+def get_current_model_config():
+    """Get the current model configuration"""
+    return AVAILABLE_MODELS.get(current_model_name, AVAILABLE_MODELS["gpt-4o"])
+
+def set_current_model(model_name: str):
+    """Set the current model globally"""
+    global current_model_name, llm
+    if model_name in AVAILABLE_MODELS:
+        current_model_name = model_name
+        # Reinitialize LLM with new model
+        try:
+            access_token = get_access_token()
+            llm = get_llm(access_token)
+            logger.info(f"Successfully switched to model: {model_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error switching to model {model_name}: {e}")
+            return False
+    else:
+        logger.warning(f"Model {model_name} not available")
+        return False
+
+def get_current_model_name():
+    """Get the current model name"""
+    return current_model_name
 
 # --- OpenAI LLM Client ---
-def get_llm(access_token: str = None):
+def get_llm(access_token: str = None, model_name: str = None):
     """
     Get OpenAI LLM client. access_token parameter is kept for compatibility
     but not used since OpenAI uses API key authentication.
+    model_name parameter allows overriding the current global model.
     """
     try:
         # Get fresh API key each time to avoid caching issues
@@ -118,11 +164,14 @@ def get_llm(access_token: str = None):
             logger.warning("OPENAI_API_KEY environment variable not set")
             return None
         
+        # Use provided model_name or current global model
+        model_config = AVAILABLE_MODELS.get(model_name or current_model_name, AVAILABLE_MODELS["gpt-4o"])
+        
         return ChatOpenAI(
-            model="gpt-4o",  # Using GPT-4o model
+            model=model_config["model"],
             openai_api_key=current_api_key,
-            temperature=0.5,  # Increased for more natural, detailed responses
-            max_tokens=16000,  # Significantly increased for multi-meeting analysis
+            temperature=model_config["temperature"],
+            max_tokens=model_config["max_tokens"],
             request_timeout=120  # Increased timeout for complex queries
         )
     except Exception as e:
@@ -435,7 +484,7 @@ class EnhancedMeetingDocumentProcessor:
             else:
                 return fallback_summary
     def refresh_clients(self):
-        """Refresh OpenAI clients with new API key (if needed)"""
+        """Refresh OpenAI clients with new API key (if needed) and current model"""
         try:
             global access_token, llm, embedding_model
 
@@ -445,7 +494,8 @@ class EnhancedMeetingDocumentProcessor:
                 self.access_token = access_token
                 self.token_expiry = datetime.now() + timedelta(hours=1)
 
-                llm = get_llm(access_token)
+                # Use current model when refreshing
+                llm = get_llm(access_token, current_model_name)
                 embedding_model = get_embedding_model(access_token)
                 self.llm = llm
                 self.embedding_model = embedding_model
@@ -456,12 +506,13 @@ class EnhancedMeetingDocumentProcessor:
                 self.access_token = access_token
                 self.token_expiry = datetime.now() + timedelta(hours=1)
 
-                llm = get_llm(access_token)
+                # Use current model when refreshing
+                llm = get_llm(access_token, current_model_name)
                 embedding_model = get_embedding_model(access_token)
                 self.llm = llm
                 self.embedding_model = embedding_model
 
-            logger.info("OpenAI clients refreshed successfully")
+            logger.info(f"OpenAI clients refreshed successfully with model: {current_model_name}")
         except Exception as e:
             logger.error(f"Failed to refresh OpenAI clients: {e}")
             raise

@@ -67,6 +67,25 @@
         <div class="main-content">
             <div class="main-header">
                 <div class="chat-title" id="chat-title">Document Fulfillment</div>
+                <div class="header-center">
+                    <!-- Model Selector -->
+                    <div class="model-selector-container">
+                        <div class="model-selector" id="model-selector">
+                            <div class="model-display" onclick="toggleModelDropdown()">
+                                <span class="model-icon">🤖</span>
+                                <span class="model-name" id="current-model-name">GPT-4o</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="model-dropdown" id="model-dropdown">
+                                <!-- Model options will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="model-status" id="model-status">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Ready</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <button class="icon-btn" title="Upload Documents" onclick="showUploadModal()">📁</button>
                     <button class="icon-btn" title="Manage Documents" onclick="showDocumentManagement()">🧹</button>

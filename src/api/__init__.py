@@ -7,6 +7,7 @@ from flask import Flask
 from src.api.auth_routes import create_auth_blueprint
 from src.api.chat_routes import create_chat_blueprint
 from src.api.document_routes import create_document_blueprint
+from src.api.model_routes import create_model_blueprint
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,11 @@ def register_all_routes(app: Flask, base_path: str, services: dict):
         )
         app.register_blueprint(doc_bp)
         logger.info("Document routes registered")
+        
+        # Create and register model blueprint
+        model_bp = create_model_blueprint(base_path)
+        app.register_blueprint(model_bp)
+        logger.info("Model routes registered")
         
         logger.info(f"All API routes registered with base path: {base_path}")
         

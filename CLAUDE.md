@@ -56,12 +56,13 @@ Two parallel implementations:
 2. **Modular Architecture** (`src/` directory): Clean separation of concerns
 
 ### Core Components
-- `flask_app.py` - Main Flask application entry point
-- `meeting_processor.py` - Global AI client variables: `access_token`, `embedding_model`, `llm`
-- `src/database/` - DatabaseManager (SQLite + FAISS)
+- `flask_app.py` - Main Flask application entry point with service composition
+- `meeting_processor.py` - Global AI client variables: `access_token`, `embedding_model`, `llm`, model switching
+- `src/database/` - DatabaseManager (SQLite + FAISS hybrid storage)
 - `src/services/` - Business logic: AuthService, ChatService, DocumentService, UploadService
-- `src/api/` - Flask blueprints for routes
+- `src/api/` - Flask blueprints: auth_routes, chat_routes, document_routes, model_routes
 - `src/ai/` - LLM operations and query processing
+- `azure_meeting_processor_reference.py` - Azure deployment variant
 
 ### Key Design Patterns
 - **Global Variable Pattern:** All AI operations use globals from `meeting_processor.py`
@@ -90,10 +91,25 @@ else:
 
 **NEVER instantiate directly:** `ChatOpenAI()`, `OpenAIEmbeddings()`, `AzureChatOpenAI()`
 
+### Model Selection System
+Dynamic LLM model switching via UI dropdown:
+- **Available Models:** Configured in `AVAILABLE_MODELS` dict in `meeting_processor.py`
+- **Model Persistence:** Saved to localStorage, restored on page refresh
+- **Global Model Variable:** `current_model_name` tracks active model
+- **API Endpoints:** `/api/model/available`, `/api/model/current`, `/api/model/switch`
+- **UI Integration:** Model selector in header with real-time status indicator
+
+```python
+# Model switching functions
+set_current_model(model_name)      # Switch active model globally
+get_current_model_name()           # Get current model
+get_current_model_config()         # Get current model configuration
+```
+
 ### Environment Switching Protocol
 Modify only these functions in `meeting_processor.py`:
 - `get_access_token()` - Return None for OpenAI, Azure token for Azure
-- `get_llm()` - Return ChatOpenAI or AzureChatOpenAI  
+- `get_llm()` - Return ChatOpenAI or AzureChatOpenAI with dynamic model selection
 - `get_embedding_model()` - Return OpenAIEmbeddings or AzureOpenAIEmbeddings
 
 ### Database Access Pattern
@@ -118,6 +134,18 @@ documents = db_manager.get_all_documents(user_id)
 - **Session Management:** Custom SQLite session backend for IIS compatibility
 
 ## Frontend Architecture
+
+### JavaScript Module Organization
+- `static/script.js` - Main application logic with model selector integration
+- `static/js/config.js` - App configuration and base path management
+- `static/js/modules/mentions.js` - Advanced mention system (@project, @meeting, @date, #folder)
+
+### Model Selector UI
+Real-time model switching interface in header:
+- **Visual Components:** Dropdown with model options, status indicator, confirmation animations
+- **Persistence:** localStorage saves user preference across sessions
+- **Confirmation:** Each chat response displays which model responded (`🤖 Model Name`)
+- **Placeholder Updates:** Input field updates to "Ask [Model] about your documents..."
 
 ### Mention System
 Located in `static/js/modules/mentions.js`:
@@ -207,9 +235,18 @@ python -c "import faiss; print(f'Vectors: {faiss.read_index('vector_index.faiss'
 
 # Validate environment setup
 python -c "
-from meeting_processor import access_token, embedding_model, llm
+from meeting_processor import access_token, embedding_model, llm, get_current_model_name
 print(f'LLM: {\"✓\" if llm else \"✗\"}')
-print(f'Embedding: {\"✓\" if embedding_model else \"✗\"}')"
+print(f'Embedding: {\"✓\" if embedding_model else \"✗\"}')
+print(f'Current Model: {get_current_model_name()}')"
+```
+
+### Testing Model Features
+```bash
+# Test model switching in browser console
+# Open browser dev tools and run:
+testModelFeatures()   # Comprehensive model functionality test
+testModelAPI()        # API endpoints test
 ```
 
 ## Processing Strategy
@@ -224,4 +261,11 @@ print(f'Embedding: {\"✓\" if embedding_model else \"✗\"}')"
 Legacy processing for:
 - Simple document lookups
 - Single meeting questions
+
+### Model Confirmation & Response Tracking
+All chat responses include model identification:
+- **Backend:** Chat API includes `model_info` in JSON response
+- **Frontend:** Messages display `🤖 [Model Name]` indicator
+- **Persistence:** Model info saved in conversation history
+- **Validation:** Users can verify which model generated each response
 
