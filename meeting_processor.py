@@ -1592,11 +1592,11 @@ Examples:
                     if basic_results:
                         logger.info("[STEP F: Converting basic results to chunks...")
                         chunk_ids = [chunk_id for chunk_id, _ in basic_results]
-                        logger.info(f"📋 Chunk IDs from basic search: {chunk_ids[:3]}... (showing first 3)")
+                        logger.info(f"Chunk IDs from basic search: {chunk_ids[:3]}... (showing first 3)")
                         
                         chunks = self.vector_db.get_chunks_by_ids(chunk_ids)
                         
-                        logger.info(f"📄 Retrieved {len(chunks) if chunks else 0} chunks from database")
+                        logger.info(f"Retrieved {len(chunks) if chunks else 0} chunks from database")
                         
                         if chunks:
                             logger.info("[OK] Basic search fallback successful - converting to enhanced format")
@@ -1655,8 +1655,8 @@ Examples:
             response, context = self._generate_intelligence_response(query, enhanced_results, user_id)
             
             logger.info("[RESULT] ENHANCED SEARCH RESPONSE GENERATED SUCCESSFULLY")
-            logger.info(f"📝 Final response length: {len(response)} characters")
-            logger.info(f"📄 Final context length: {len(context) if context else 0} characters")
+            logger.info(f"Final response length: {len(response)} characters")
+            logger.info(f"Final context length: {len(context) if context else 0} characters")
             
             if include_context:
                 return response, context
