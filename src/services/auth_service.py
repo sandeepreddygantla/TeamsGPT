@@ -200,24 +200,6 @@ class AuthService:
             logger.error(f"Error getting current user data: {e}")
             return None
     
-    def validate_user_access(self, user_id: str) -> bool:
-        """
-        Validate that current user has access to the specified user_id.
-        
-        Args:
-            user_id: User ID to validate access for
-            
-        Returns:
-            True if access is valid
-        """
-        try:
-            if not current_user.is_authenticated:
-                return False
-            
-            return current_user.user_id == user_id
-        except Exception as e:
-            logger.error(f"User access validation error: {e}")
-            return False
     
     def load_user_for_session(self, user_id: str) -> Optional[SessionUser]:
         """

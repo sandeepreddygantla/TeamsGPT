@@ -156,27 +156,3 @@ class UploadService:
             logger.error(f"Error getting upload statistics: {e}")
             return {'error': str(e)}
     
-    def cleanup_failed_uploads(self, user_id: str) -> Tuple[bool, str]:
-        """
-        Clean up any failed upload artifacts.
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        try:
-            # This could be implemented to clean up:
-            # - Orphaned files in upload directories
-            # - Failed job records
-            # - Incomplete document records
-            
-            # For now, just return success
-            # Future enhancement: implement actual cleanup logic
-            
-            return True, "Cleanup completed successfully"
-            
-        except Exception as e:
-            logger.error(f"Upload cleanup error: {e}")
-            return False, f"Cleanup failed: {str(e)}"

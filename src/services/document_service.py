@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from werkzeug.utils import secure_filename
 
 from src.database.manager import DatabaseManager
-from src.models.document import MeetingDocument, UploadJob
+from src.models.document import MeetingDocument
 
 logger = logging.getLogger(__name__)
 

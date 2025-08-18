@@ -68,38 +68,3 @@ class MeetingDocument:
     processed_at: Optional[datetime] = None
 
 
-@dataclass
-class UploadJob:
-    """File upload job tracking model."""
-    job_id: str
-    user_id: str
-    project_id: Optional[str]
-    meeting_id: Optional[str]
-    total_files: int
-    processed_files: int = 0
-    failed_files: int = 0
-    status: str = "pending"  # pending, processing, completed, failed
-    error_message: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-
-
-@dataclass
-class SearchResult:
-    """Search result model for document queries."""
-    chunk_id: str
-    document_id: str
-    filename: str
-    content: str
-    similarity_score: float
-    chunk_index: int
-    
-    # Document metadata
-    extracted_date: Optional[datetime] = None
-    speakers: Optional[List[str]] = None
-    topics: Optional[List[str]] = None
-    
-    # Context information
-    context_before: Optional[str] = None
-    context_after: Optional[str] = None
