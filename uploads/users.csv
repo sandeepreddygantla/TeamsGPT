@@ -1,2 +1,0 @@
-user_id,username,email,full_name,password_hash,created_at,last_login,is_active,role
-ccecdf6b-8291-4cda-b38e-bf88f39028b8,sgantla001,reddysandeep0904@gmail.com,Sandeep reddy,$2b$12$7uBgL8m0XwMYEBjyyB.UcetlkyLSdQppqsaVhn0/r8Bg.vYePxSli,2025-08-14 08:54:06.339956,2025-08-14 08:54:11.304909,1,user
