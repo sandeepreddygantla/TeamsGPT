@@ -5447,7 +5447,7 @@ function saveCurrentModel(modelId) {
 // Load saved model from localStorage
 function loadSavedModel() {
     try {
-        const savedModel = getFromLocalStorage(STORAGE_KEYS.CURRENT_MODEL, null);
+        const savedModel = loadFromLocalStorage(STORAGE_KEYS.CURRENT_MODEL, null);
         console.log('[ModelSelector] Loaded saved model from localStorage:', savedModel);
         return savedModel;
     } catch (error) {

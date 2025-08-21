@@ -268,6 +268,6 @@ if __name__ == '__main__':
     app = get_application()
     if app:
         logger.info(f"Starting development server with base path: {BASE_PATH}")
-        app.run(debug=True)
+        app.run(debug=True, host='0.0.0.0', port=5000)
     else:
         logger.error("Failed to get application instance")
