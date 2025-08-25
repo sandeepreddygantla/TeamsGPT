@@ -21,324 +21,36 @@ class EnhancedPromptManager:
     
     def __init__(self):
         """Initialize enhanced prompt manager."""
-        self.response_templates = {
-            'general_query': self._get_general_query_template(),
-            'summary_query': self._get_summary_query_template(),
-            'comprehensive_summary': self._get_comprehensive_summary_template(),
-            'detailed_analysis': self._get_detailed_analysis_template(),
-            'multi_meeting_synthesis': self._get_multi_meeting_synthesis_template()
-        }
+        self.universal_template = """You are a helpful AI assistant analyzing meeting documents.
+
+USER QUERY: "{query}"
+
+{context_instructions}
+
+MEETING CONTEXT ({document_count} documents{date_range}):
+{context}
+
+{response_instructions}
+
+{format_instructions}
+
+CRITICAL CITATION REQUIREMENTS:
+- When referencing any information, you MUST cite the specific document filename
+- Format: "According to [filename]: [information]" 
+- Example: "According to Meeting_2024_01_15.docx: The budget was approved"
+- NEVER use generic references like "Document: Chunk X", "the document", or chunk numbers
+- Every piece of information must be traceable to its source meeting filename
+
+CITATION FORMAT EXAMPLES:
+- "According to Print_Migration_Meeting.docx: Adrian expressed concerns about the timeline"
+- "From Daily_Standup_2024_01_15.docx: The team decided to postpone the release"
+- "As mentioned in Project_Review.docx: Sarah proposed a new budget allocation"
+- "During the meeting recorded in Team_Sync_2024_02_10.docx: The following decisions were made" """
         
-    def _get_general_query_template(self) -> str:
-        """Template for general queries requiring detailed responses."""
-        return """You are a helpful AI assistant that provides detailed, conversational responses about meeting documents. Focus on natural, flowing conversation rather than structured formats.
 
-USER QUERY: "{query}"
 
-MEETING CONTEXT (from {document_count} documents):
-{context}
 
-INSTRUCTIONS:
-Please organize your response by meeting dates to make it clear and easy to understand. Structure your response as follows:
 
-1. Start with a brief overview answering the user's question
-2. Organize by meeting dates using clear date headers (e.g., "## July 14, 2025 - Meeting Title")
-3. Under each date header, provide:
-   - Meeting purpose/context (if available)
-   - Key participants mentioned
-   - Main topics discussed
-   - Important decisions made
-   - Action items or next steps
-   - Relevant quotes or specific details
-
-IMPORTANT: When referencing information from the documents, always cite the document filename (e.g., "Document_Fulfillment_AIML-20250714_153021-Meeting_Recording.docx") rather than chunk numbers. This helps users know which specific document the information comes from.
-
-RESPONSE REQUIREMENTS:
-- Use clear date headers for chronological organization
-- Include comprehensive details under each meeting section
-- Provide specific quotes when relevant (in quotation marks)
-- Always cite document sources using filenames
-- Make it easy to understand what happened when
-
-Your response should be well-organized and comprehensive so the user can easily understand the timeline and what happened in each meeting."""
-
-    def _get_summary_query_template(self) -> str:
-        """Template for summary queries requiring comprehensive overviews."""
-        return """You are a helpful AI assistant that provides detailed, conversational responses about meeting documents. This is a summary request - provide a comprehensive overview while maintaining a natural, conversational tone.
-
-USER QUERY: "{query}"
-
-MEETING CONTEXT (from {document_count} documents spanning {date_range}):
-{context}
-
-INSTRUCTIONS:
-This is a summary request. Please provide a comprehensive overview that includes:
-- Key topics and themes discussed across meetings
-- Important decisions made and their context
-- Action items and next steps identified
-- Any patterns or trends across the meetings
-- Significant outcomes or conclusions
-
-Write your response in a natural, conversational style as if you're having a detailed discussion with the user about their meetings. Include specific details, quotes, and context from the meetings, but organize the information in a clear, flowing narrative.
-
-Avoid rigid structured formats with bullet points or formal section headers. Instead, let the information flow naturally while ensuring you cover all the important aspects comprehensively.
-
-IMPORTANT: When referencing information, always cite the specific document filename rather than document numbers or chunk references. This helps users identify the source document.
-
-Be thorough - the user wants a complete picture, not just highlights. Include relevant background context and elaborate on important points with specific examples from the meetings.
-
-Your summary should be thorough enough that someone who missed these meetings would have a complete understanding of what transpired and what needs to happen next."""
-
-    def _get_comprehensive_summary_template(self) -> str:
-        """Template for large-scale comprehensive summaries across many meetings."""
-        return """You are a senior business intelligence analyst with expertise in synthesizing complex organizational information. You have access to comprehensive meeting intelligence from {document_count} meetings spanning {date_range}. Your task is to provide an executive-level comprehensive summary that captures all critical information and insights.
-
-USER REQUEST: "{query}"
-
-COMPLETE MEETING INTELLIGENCE DATABASE:
-{context}
-
-EXECUTIVE SUMMARY REQUIREMENTS:
-
-This is a comprehensive analysis request requiring you to process and synthesize information from {document_count} meetings. You must ensure no meeting is overlooked and all critical information is captured.
-
-COMPREHENSIVE ANALYSIS FRAMEWORK:
-
-**STRATEGIC OVERVIEW**
-- Synthesize the overarching themes and strategic directions across all meetings
-- Identify patterns and trends that emerge across the timeline
-- Highlight key organizational priorities and focus areas
-
-**COMPREHENSIVE TOPIC ANALYSIS**
-For each major topic area discussed:
-- Provide detailed background and context
-- Show evolution of discussions over time
-- Include multiple perspectives and viewpoints presented
-- Document any consensus reached or ongoing disagreements
-- Explain implications and significance
-
-**COMPLETE DECISION INVENTORY**
-Document every decision made across all meetings:
-- Decision details with full context and background
-- Decision-making process and participants involved
-- Rationale and supporting arguments presented
-- Implementation plans and timelines established
-- Current status and any updates or changes
-- Cross-references to related decisions
-
-**COMPREHENSIVE ACTION ITEM COMPILATION**
-Complete catalog of all action items:
-- Detailed action descriptions with context
-- Responsible parties and their roles
-- Original deadlines and any revisions
-- Current status and progress updates
-- Dependencies and prerequisites
-- Blockers or challenges encountered
-- Completion status and outcomes achieved
-
-**STAKEHOLDER ENGAGEMENT ANALYSIS**
-Detailed analysis of all participants:
-- Key contributors and their areas of expertise
-- Leadership roles and responsibilities
-- Collaboration patterns and working relationships
-- Subject matter expertise demonstrated
-- Critical dependencies on specific individuals
-
-**ORGANIZATIONAL PROGRESS ASSESSMENT**
-Comprehensive evaluation of achievements:
-- Strategic goals accomplished
-- Key milestones reached
-- Major deliverables completed
-- Performance metrics and KPIs discussed
-- Challenges overcome and lessons learned
-- Areas of exceptional performance
-
-**COMPREHENSIVE RISK AND OPPORTUNITY ANALYSIS**
-- All risks identified across meetings with mitigation strategies
-- Opportunities discussed and their potential impact
-- Resource allocation decisions and their implications
-- Timeline pressures and critical path items
-- External factors affecting progress
-
-**FORWARD-LOOKING STRATEGIC IMPLICATIONS**
-- Future priorities and strategic directions
-- Upcoming critical decisions that need to be made
-- Resource requirements and allocation needs
-- Timeline commitments and deadline management
-- Success factors for upcoming initiatives
-
-CRITICAL REQUIREMENTS:
-1. **COMPLETENESS**: Every meeting must be represented in the analysis
-2. **DETAIL**: Include specific quotes, data points, and concrete examples
-3. **ATTRIBUTION**: Always cite specific document filenames
-4. **CHRONOLOGY**: Show how topics and decisions evolved over time
-5. **SYNTHESIS**: Connect related information across different meetings
-6. **INSIGHT**: Provide analytical insights beyond surface-level reporting
-7. **ACTIONABILITY**: Ensure the summary enables informed decision-making
-
-FORMAT SPECIFICATIONS:
-- Use clear, professional business language
-- Organize information logically with descriptive headers
-- Include specific dates, names, and details
-- Provide comprehensive coverage without omitting important details
-- Use quotation marks for direct quotes from meetings
-- Reference document sources by filename
-- Maintain executive-level perspective throughout
-
-This comprehensive summary will serve as a critical business intelligence document, so ensure it captures the full scope and depth of information across all {document_count} meetings."""
-
-    def _get_detailed_analysis_template(self) -> str:
-        """Template for detailed analytical queries."""
-        return """You are a senior business analyst with deep expertise in organizational analysis and strategic planning. Your role is to provide detailed, analytical responses that go beyond surface-level information to deliver meaningful insights and actionable intelligence.
-
-USER ANALYSIS REQUEST: "{query}"
-
-DETAILED MEETING INTELLIGENCE:
-{context}
-
-ANALYTICAL RESPONSE FRAMEWORK:
-
-**COMPREHENSIVE ANALYSIS APPROACH**
-Your response must provide thorough, detailed analysis that includes:
-
-1. **CONTEXTUAL FOUNDATION**
-   - Provide comprehensive background information
-   - Explain the broader organizational or project context
-   - Identify key stakeholders and their roles
-   - Establish timeline and sequence of events
-
-2. **DETAILED EXAMINATION**
-   - Analyze all relevant information from the meetings
-   - Include specific quotes and examples to support points
-   - Examine multiple perspectives and viewpoints presented
-   - Identify patterns, trends, and correlations
-
-3. **CRITICAL ASSESSMENT**
-   - Evaluate the significance and implications of findings
-   - Assess the quality and completeness of information
-   - Identify gaps, inconsistencies, or areas needing clarification
-   - Consider potential risks and opportunities
-
-4. **STRATEGIC INSIGHTS**
-   - Provide analytical insights that go beyond the obvious
-   - Connect information across different meetings and topics
-   - Identify underlying causes and root issues
-   - Suggest implications for future planning and decision-making
-
-5. **ACTIONABLE INTELLIGENCE**
-   - Highlight key takeaways and their practical implications
-   - Identify critical success factors and potential obstacles
-   - Suggest areas for follow-up or additional investigation
-   - Provide recommendations where appropriate
-
-DETAILED RESPONSE REQUIREMENTS:
-- **DEPTH**: Provide comprehensive coverage of all relevant aspects
-- **SPECIFICITY**: Include concrete details, examples, and supporting evidence
-- **ATTRIBUTION**: Always cite specific document sources by filename
-- **INSIGHT**: Go beyond reporting to provide meaningful analysis
-- **CONTEXT**: Explain the broader significance and implications
-- **CLARITY**: Organize information logically and present it clearly
-- **COMPLETENESS**: Address all aspects of the user's question thoroughly
-
-PROFESSIONAL STANDARDS:
-- Maintain analytical objectivity while providing insights
-- Use professional business language appropriate for executive audiences
-- Support all claims with specific evidence from the meetings
-- Provide balanced analysis that considers multiple perspectives
-- Ensure recommendations are grounded in the available evidence
-
-Your analysis should be comprehensive enough to serve as a definitive resource on the topic, providing both detailed information and strategic insights that enable informed decision-making."""
-
-    def _get_multi_meeting_synthesis_template(self) -> str:
-        """Template for synthesizing information across multiple meetings."""
-        return """You are a senior organizational intelligence analyst specializing in cross-meeting synthesis and strategic intelligence. Your expertise lies in identifying patterns, connections, and insights across multiple meetings to provide comprehensive understanding of organizational activities and outcomes.
-
-USER SYNTHESIS REQUEST: "{query}"
-
-MULTI-MEETING INTELLIGENCE (spanning {document_count} meetings from {date_range}):
-{context}
-
-SYNTHESIS ANALYSIS FRAMEWORK:
-
-**CROSS-MEETING INTELLIGENCE SYNTHESIS**
-
-Your task is to analyze and synthesize information across all {document_count} meetings to provide comprehensive insights that reveal:
-
-1. **THEMATIC CONTINUITY AND EVOLUTION**
-   - Identify recurring themes and how they evolved over time
-   - Track the progression of key topics across meetings
-   - Show how decisions and discussions built upon previous meetings
-   - Highlight any shifts in priorities or focus areas
-
-2. **INTERCONNECTED DECISION MAPPING**
-   - Map relationships between decisions made in different meetings
-   - Show how earlier decisions influenced later discussions
-   - Identify decision dependencies and their implications
-   - Track the evolution of strategic thinking over time
-
-3. **COMPREHENSIVE STAKEHOLDER ANALYSIS**
-   - Analyze participation patterns across meetings
-   - Identify key contributors and their evolving roles
-   - Track collaboration patterns and working relationships
-   - Show how stakeholder involvement changed over time
-
-4. **ORGANIZATIONAL PROGRESS TRACKING**
-   - Document progress on initiatives across multiple meetings
-   - Show how action items were followed up and completed
-   - Track the resolution of issues and challenges over time
-   - Identify accelerators and obstacles to progress
-
-5. **STRATEGIC PATTERN RECOGNITION**
-   - Identify strategic patterns and organizational behaviors
-   - Recognize recurring challenges and how they were addressed
-   - Show learning and adaptation across meetings
-   - Highlight successful strategies and best practices
-
-COMPREHENSIVE SYNTHESIS REQUIREMENTS:
-
-**INTEGRATED NARRATIVE DEVELOPMENT**
-Create a cohesive narrative that weaves together information from all meetings, showing:
-- How topics and themes developed chronologically
-- Connections between seemingly separate discussions
-- The bigger picture that emerges from multiple perspectives
-- Strategic implications of the collective intelligence
-
-**DETAILED EVIDENCE INTEGRATION**
-- Include specific quotes and examples from multiple meetings
-- Show how different meetings contributed unique perspectives
-- Provide concrete evidence for all synthesis conclusions
-- Cite specific document sources throughout the analysis
-
-**TEMPORAL ANALYSIS AND PROGRESSION**
-- Show clear chronological progression of events and decisions
-- Identify key inflection points and turning moments
-- Demonstrate cause-and-effect relationships across meetings
-- Track the evolution of organizational thinking and strategy
-
-**COMPREHENSIVE INSIGHT GENERATION**
-- Provide insights that could only emerge from cross-meeting analysis
-- Identify patterns and trends not visible in individual meetings
-- Generate strategic intelligence for future planning
-- Offer analytical conclusions based on the complete picture
-
-SYNTHESIS QUALITY STANDARDS:
-- **COMPREHENSIVENESS**: Cover all relevant meetings and topics
-- **INTEGRATION**: Show connections and relationships across meetings
-- **DEPTH**: Provide detailed analysis with supporting evidence
-- **INSIGHT**: Generate meaningful conclusions and implications
-- **ATTRIBUTION**: Cite specific meetings and documents throughout
-- **CLARITY**: Present complex synthesis in clear, organized manner
-- **STRATEGIC VALUE**: Ensure the synthesis provides actionable intelligence
-
-FORMAT AND PRESENTATION:
-- Use clear section headers to organize the synthesis
-- Include specific dates and meeting references
-- Provide direct quotes with proper attribution
-- Show chronological progression where relevant
-- Use professional business language throughout
-- Maintain analytical objectivity while providing insights
-
-Your synthesis should reveal the full picture that emerges from analyzing all {document_count} meetings together, providing insights and intelligence that would not be apparent from reviewing individual meetings separately."""
 
     def optimize_context_for_token_limit(
         self, 
@@ -365,8 +77,8 @@ Your synthesis should reveal the full picture that emerges from analyzing all {d
         # Sort chunks by relevance and recency
         scored_chunks = self._score_chunks_for_relevance(context_chunks, query)
         
-        # Build optimized context within token limit
-        optimized_context = []
+        # Build optimized context grouped by document within token limit
+        document_chunks = {}
         included_documents = set()
         current_tokens = 0
         
@@ -379,18 +91,26 @@ Your synthesis should reveal the full picture that emerges from analyzing all {d
                 if chunk_data['score'] > 0.8:  # High relevance threshold
                     summarized = self._summarize_chunk_content(chunk_text, max_tokens - current_tokens)
                     if summarized:
-                        optimized_context.append(summarized)
+                        doc_name = chunk_data.get('document_name', 'Unknown_Document')
+                        if doc_name not in document_chunks:
+                            document_chunks[doc_name] = []
+                        document_chunks[doc_name].append(summarized)
                         current_tokens += self._estimate_tokens(summarized)
-                        included_documents.add(chunk_data.get('document_name', 'Unknown'))
+                        included_documents.add(doc_name)
                 break
             
-            optimized_context.append(chunk_text)
+            doc_name = chunk_data.get('document_name', 'Unknown_Document')
+            if doc_name not in document_chunks:
+                document_chunks[doc_name] = []
+            document_chunks[doc_name].append(chunk_text)
             current_tokens += chunk_tokens
-            included_documents.add(chunk_data.get('document_name', 'Unknown'))
+            included_documents.add(doc_name)
         
-        final_context = '\n\n'.join(optimized_context)
+        # Format context with clear document source headers
+        final_context = self._format_context_with_sources(document_chunks)
         
-        logger.info(f"Context optimization: {len(context_chunks)} chunks -> {len(optimized_context)} chunks")
+        total_chunks = sum(len(chunks) for chunks in document_chunks.values())
+        logger.info(f"Context optimization: {len(context_chunks)} chunks -> {total_chunks} chunks grouped by document")
         logger.info(f"Estimated tokens: {current_tokens}/{max_tokens}")
         logger.info(f"Documents included: {len(included_documents)}")
         
@@ -485,16 +205,14 @@ Your synthesis should reveal the full picture that emerges from analyzing all {d
         self,
         query: str,
         context_chunks: List[Dict[str, Any]],
-        query_type: str = 'general_query',
         additional_metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
-        Generate an enhanced prompt using the appropriate template.
+        Generate an enhanced prompt using the universal template.
         
         Args:
             query: User query
             context_chunks: Context chunks with metadata
-            query_type: Type of query for template selection
             additional_metadata: Additional metadata for template variables
             
         Returns:
@@ -505,33 +223,40 @@ Your synthesis should reveal the full picture that emerges from analyzing all {d
             context_chunks, query
         )
         
+        # Analyze query characteristics
+        is_summary = self._detect_summary_query(query)
+        is_comprehensive = len(context_chunks) > 50
+        
         # Prepare template variables
         template_vars = {
             'query': query,
             'context': optimized_context,
             'document_count': len(included_documents),
-            'date_range': self._calculate_date_range(context_chunks),
+            'date_range': self._get_date_range_text(context_chunks),
+            'context_instructions': self._get_context_instructions(is_summary, is_comprehensive),
+            'response_instructions': self._get_response_instructions(query, is_summary),
+            'format_instructions': self._get_format_instructions(query)
         }
         
         # Add additional metadata if provided
         if additional_metadata:
             template_vars.update(additional_metadata)
         
-        # Select and format template
-        template = self.response_templates.get(query_type, self.response_templates['general_query'])
-        
         try:
-            formatted_prompt = template.format(**template_vars)
-            logger.info(f"Generated enhanced prompt for {query_type}: {len(formatted_prompt)} characters")
+            formatted_prompt = self.universal_template.format(**template_vars)
+            logger.info(f"Generated enhanced prompt: {len(formatted_prompt)} characters")
             return formatted_prompt
         except KeyError as e:
             logger.warning(f"Missing template variable {e}, using fallback")
             # Fallback with minimal variables
-            return template.format(
+            return self.universal_template.format(
                 query=query,
                 context=optimized_context,
                 document_count=len(included_documents),
-                date_range="Available meetings"
+                date_range=" spanning available meetings",
+                context_instructions="",
+                response_instructions="Please answer the question naturally and comprehensively.",
+                format_instructions=""
             )
     
     def _calculate_date_range(self, context_chunks: List[Dict[str, Any]]) -> str:
@@ -555,24 +280,70 @@ Your synthesis should reveal the full picture that emerges from analyzing all {d
         else:
             return f"{dates[0].strftime('%Y-%m-%d')} to {dates[-1].strftime('%Y-%m-%d')}"
     
-    def get_query_type(self, query: str, context_size: int) -> str:
-        """Determine the appropriate query type based on query content and context."""
+    def _get_date_range_text(self, context_chunks: List[Dict[str, Any]]) -> str:
+        """Get formatted date range text for template."""
+        date_range = self._calculate_date_range(context_chunks)
+        if date_range and date_range != "Recent meetings":
+            return f" spanning {date_range}"
+        return ""
+    
+    def _get_context_instructions(self, is_summary: bool, is_comprehensive: bool) -> str:
+        """Generate context-specific instructions."""
+        if is_comprehensive:
+            return "This is a comprehensive analysis requiring detailed examination of all documents."
+        elif is_summary:
+            return "This is a summary request requiring overview of key information."
+        return ""
+    
+    def _get_response_instructions(self, query: str, is_summary: bool) -> str:
+        """Generate response instructions based on query type."""
+        if is_summary:
+            return """Please provide a comprehensive summary organized by meeting dates:
+1. Start with a brief overview
+2. Organize by meeting dates using clear headers (e.g., "## July 14, 2025")
+3. Under each date include: purpose, participants, topics, decisions, action items"""
+        
         query_lower = query.lower()
+        if any(word in query_lower for word in ['analyze', 'analysis', 'detailed', 'examine', 'assess']):
+            return """Please provide detailed analysis with:
+1. Contextual background and significance
+2. Multiple perspectives and evidence
+3. Key insights and implications
+4. Actionable recommendations where appropriate"""
         
-        # Summary queries
-        if self._detect_summary_query(query):
-            if context_size > 50:  # Large context indicates comprehensive summary
-                return 'comprehensive_summary'
-            else:
-                return 'summary_query'
+        return """Please answer the question naturally and comprehensively:
+1. Address the specific question asked
+2. Provide relevant details and context
+3. Include supporting evidence from the documents"""
+    
+    def _get_format_instructions(self, query: str) -> str:
+        """Generate format instructions based on query content."""
+        query_lower = query.lower()
+        instructions = []
         
-        # Multi-meeting synthesis
-        if any(indicator in query_lower for indicator in ['across meetings', 'over time', 'pattern', 'trend']):
-            return 'multi_meeting_synthesis'
+        if any(word in query_lower for word in ['timeline', 'chronological', 'when']):
+            instructions.append("- Organize information chronologically")
+        if any(word in query_lower for word in ['decision', 'decided', 'conclusion']):
+            instructions.append("- Highlight decisions made and their context")
+        if any(word in query_lower for word in ['action', 'tasks', 'todo', 'next steps']):
+            instructions.append("- Extract action items with owners and deadlines")
+        if any(word in query_lower for word in ['who', 'participants', 'attendees']):
+            instructions.append("- Clearly identify participants and their roles")
         
-        # Detailed analysis
-        if any(indicator in query_lower for indicator in ['analyze', 'analysis', 'detailed', 'examine', 'assess']):
-            return 'detailed_analysis'
+        return "\n".join(instructions) if instructions else ""
+    
+    def _format_context_with_sources(self, document_chunks: Dict[str, List[str]]) -> str:
+        """Format context with clear document source headers."""
+        if not document_chunks:
+            return "No relevant content found."
         
-        # Default to general query
-        return 'general_query'
+        formatted_sections = []
+        
+        for doc_name, chunks in document_chunks.items():
+            if chunks:
+                section = f"=== SOURCE: {doc_name} ===\n"
+                section += "\n\n".join(chunks)
+                formatted_sections.append(section)
+        
+        return "\n\n".join(formatted_sections)
+    

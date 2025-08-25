@@ -158,12 +158,9 @@ class EnhancedContextManager:
             logger.info(f"[CONTEXT] Collected {len(context_chunks)} context chunks from {len(selected_documents)} documents")
             
             # Generate enhanced response using comprehensive template
-            query_type = 'comprehensive_summary' if len(all_documents) > 50 else 'summary_query'
-            
             enhanced_prompt = self.prompt_manager.generate_enhanced_prompt(
                 query_context.query,
                 context_chunks,
-                query_type=query_type,
                 additional_metadata={
                     'total_documents': len(all_documents),
                     'selected_documents': len(selected_documents),
@@ -209,12 +206,9 @@ class EnhancedContextManager:
             )
             
             # Generate enhanced response
-            query_type = 'multi_meeting_synthesis' if len(filtered_documents) > 10 else 'summary_query'
-            
             enhanced_prompt = self.prompt_manager.generate_enhanced_prompt(
                 query_context.query,
                 context_chunks,
-                query_type=query_type,
                 additional_metadata={
                     'filter_applied': True,
                     'filtered_count': len(filtered_documents)
@@ -250,11 +244,10 @@ class EnhancedContextManager:
             # Get detailed context for targeted documents
             context_chunks = self._get_detailed_context(targeted_documents, query_context)
             
-            # Use detailed analysis template for targeted queries
+            # Use enhanced prompt for targeted queries
             enhanced_prompt = self.prompt_manager.generate_enhanced_prompt(
                 query_context.query,
-                context_chunks,
-                query_type='detailed_analysis'
+                context_chunks
             )
             
             response = self._generate_llm_response(enhanced_prompt)

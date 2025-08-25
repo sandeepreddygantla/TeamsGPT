@@ -4,82 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Meetings AI is a Flask-based document analysis and chat application that processes meeting documents using OpenAI/Azure OpenAI LLM technologies. Features modular architecture with AI-powered document processing, semantic search, and conversational interfaces.
+Meetings AI is a Flask-based document analysis and chat application that processes meeting documents using OpenAI/Azure OpenAI LLM technologies with modular architecture for AI-powered semantic search and conversations.
 
-## Development Commands
+## Key Commands
 
-### Running the Application
 ```bash
+# Run application
 python flask_app.py
 # Visit: http://127.0.0.1:5000/meetingsai/
-```
-
-### Environment Setup
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file:
+# Create .env file with:
 OPENAI_API_KEY=your_api_key                 # For OpenAI
 SECRET_KEY=your-secure-random-key           # Required for Flask sessions
 BASE_PATH=/meetingsai                       # Optional, defaults to /meetingsai
 
-# OR for Azure:
+# OR for Azure (see azure_meeting_processor_reference.py):
 # AZURE_CLIENT_ID=your_azure_client_id
 # AZURE_CLIENT_SECRET=your_azure_client_secret  
 # AZURE_PROJECT_ID=your_azure_project_id
 
-# Create tiktoken cache directory
-mkdir tiktoken_cache
+# User management
+python user_manager.py      # Add/manage users
+python user_removal.py      # Remove users
 ```
 
-### Database Operations
-Uses SQLite + FAISS hybrid storage:
-- `meeting_documents.db` - SQLite for metadata, users, projects
-- `vector_index.faiss` - FAISS for semantic embeddings
-- `sessions.db` - Session storage
+## Critical Architecture Patterns
 
-```bash
-# Reset vector database
-rm vector_index.faiss  # Auto-rebuilds on restart
-```
+### Global AI Variables Pattern (MANDATORY)
+**NEVER instantiate AI clients directly.** Always use globals from `meeting_processor.py`:
 
-## Architecture Overview
-
-### Dual Architecture Pattern
-Two parallel implementations:
-1. **Legacy Monolithic** (`meeting_processor.py`): Original implementation
-2. **Modular Architecture** (`src/` directory): Clean separation of concerns
-
-### Core Components
-- `flask_app.py` - Main Flask application entry point with service composition
-- `meeting_processor.py` - Global AI client variables: `access_token`, `embedding_model`, `llm`, model switching
-- `src/database/` - DatabaseManager (SQLite + FAISS hybrid storage)
-- `src/services/` - Business logic: AuthService, ChatService, DocumentService, UploadService
-- `src/api/` - Flask blueprints: auth_routes, chat_routes, document_routes, model_routes
-- `src/ai/` - LLM operations and query processing
-- `azure_meeting_processor_reference.py` - Azure deployment variant with GPT-5/GPT-4.1
-- `AZURE_DEPLOYMENT_GUIDE.md` - Step-by-step deployment instructions for organization
-
-### Key Design Patterns
-- **Global Variable Pattern:** All AI operations use globals from `meeting_processor.py`
-- **Service Composition:** Shared DatabaseManager instance across services
-- **Environment Switching:** Modify initialization functions for OpenAI/Azure switching
-
-## Critical Development Rules
-
-### Default Project Upload Confirmation
-Confirmation dialog for "Default Project" uploads:
-- Shows modal for Default Project or empty selection
-- "Continue Upload" button uses color `#FF612B` (orange theme)
-- Modal in `templates/chat.html`, closable via ESC/outside click
-
-### LLM Integration Requirements
-**MANDATORY:** Always use global variables for AI operations:
 ```python
 from meeting_processor import access_token, embedding_model, llm
 
@@ -90,137 +46,10 @@ else:
     logger.error("LLM not available - check API key configuration")
 ```
 
-**NEVER instantiate directly:** `ChatOpenAI()`, `OpenAIEmbeddings()`, `AzureChatOpenAI()`
+**NEVER DO:** `ChatOpenAI()`, `OpenAIEmbeddings()`, `AzureChatOpenAI()`
 
-### Model Selection System
-Dynamic LLM model switching via UI dropdown with organization-specific models:
-- **Available Models:** GPT-5 and GPT-4.1 configured in `AVAILABLE_MODELS` dict
-- **Model Persistence:** Saved to localStorage, restored on page refresh
-- **Global Model Variable:** `current_model_name` tracks active model (default: "gpt-5")
-- **API Endpoints:** `/api/model/available`, `/api/model/current`, `/api/model/switch`
-- **UI Integration:** Model selector in header with real-time status indicator
-- **Azure Deployment:** `azure_meeting_processor_reference.py` contains organization-specific Azure configuration
-
-```python
-# Model switching functions
-set_current_model(model_name)      # Switch active model globally (gpt-5, gpt-4.1)
-get_current_model_name()           # Get current model
-get_current_model_config()         # Get current model configuration
-```
-
-**Organization Models:**
-- **GPT-5:** Most advanced model for complex reasoning
-- **GPT-4.1:** Enhanced GPT-4 model for balanced performance
-
-### Environment Switching Protocol
-Modify only these functions in `meeting_processor.py`:
-- `get_access_token()` - Return None for OpenAI, Azure token for Azure
-- `get_llm()` - Return ChatOpenAI or AzureChatOpenAI with dynamic model selection
-- `get_embedding_model()` - Return OpenAIEmbeddings or AzureOpenAIEmbeddings
-
-### Database Access Pattern
-Always use DatabaseManager:
-```python
-db_manager = DatabaseManager()
-documents = db_manager.get_all_documents(user_id)
-```
-
-## IIS Deployment & Performance
-
-### IIS Configuration
-**web.config requirements:**
-- **WSGI Handler:** `flask_app.app`
-- **Python Path:** Application root directory
-- **Base Path:** Routes support `/meetingsai` prefix via `BASE_PATH`
-
-### Performance Patterns
-- **Vector Operations:** Batch processing (100 vectors/batch) for memory efficiency
-- **Tiktoken Cache:** Directory at `tiktoken_cache/` for token caching
-- **Connection Pooling:** SQLite connections with WAL mode
-- **Session Management:** Custom SQLite session backend for IIS compatibility
-
-## Frontend Architecture
-
-### JavaScript Module Organization
-- `static/script.js` - Main application logic with model selector integration
-- `static/js/config.js` - App configuration and base path management
-- `static/js/modules/mentions.js` - Advanced mention system (@project, @meeting, @date, #folder)
-
-### Model Selector UI
-Real-time model switching interface in header:
-- **Visual Components:** Dropdown with model options, status indicator, confirmation animations
-- **Persistence:** localStorage saves user preference across sessions
-- **Confirmation:** Each chat response displays which model responded (`🤖 Model Name`)
-- **Placeholder Updates:** Input field updates to "Ask [Model] about your documents..."
-
-### Mention System
-Located in `static/js/modules/mentions.js`:
-- `@project:name` - Filter by project
-- `@meeting:name` - Filter by meeting  
-- `@date:today|yesterday|YYYY-MM-DD` - Date filtering
-- `#folder` - Folder navigation
-- `#folder>` - Show folder contents
-
-### Upload Modal
-- Event listeners set when modal opens (not page load)
-- Supports click, drag/drop, file selection
-- Prevents duplicate event listeners
-
-## File Processing Pipeline
-1. **Upload & Validation:** File type validation, SHA-256 deduplication
-2. **Content Extraction:** .docx, .pdf, .txt support with fallbacks
-3. **AI Analysis:** LLM metadata extraction (topics, participants, decisions)
-4. **Chunking & Embedding:** RecursiveCharacterTextSplitter + text-embedding-3-large
-5. **Storage:** SQLite metadata + FAISS vector storage
-6. **Background Processing:** ThreadPoolExecutor with job tracking
-
-## Environment Variables
-```bash
-# AI Configuration
-OPENAI_API_KEY=sk-...                    # For OpenAI
-# OR for Azure:
-AZURE_CLIENT_ID=...
-AZURE_CLIENT_SECRET=...
-AZURE_PROJECT_ID=...
-
-# Application Configuration  
-BASE_PATH=/meetingsai                   # Route prefix
-SECRET_KEY=your-flask-secret-key        # Flask sessions
-TIKTOKEN_CACHE_DIR=tiktoken_cache       # Token caching
-```
-
-## Troubleshooting Common Issues
-
-### Vector Database Sync Problems
-If queries return "no relevant information":
-```bash
-rm vector_index.faiss  # Force rebuild from SQLite on restart
-```
-
-### Enhanced Search Issues
-- Check user_id filtering in `src/database/manager.py`
-- Monitor logs for "Enhanced search returned 0 results"
-- Ensure enhanced processing for document-specific queries
-
-### LLM Initialization Failures  
-- Verify environment variables are set correctly
-- Check `logs/flask_app.log` for initialization errors
-- Ensure tiktoken cache directory exists and is writable
-
-### Logging
-- **Main app logs**: `logs/flask_app.log`
-- **Processor logs**: `logs/meeting_processor.log`
-- **Log levels**: INFO (default)
-
-## Development Patterns
-
-### Notification System
-Manual-close notifications in `static/script.js`:
-- No auto-dismiss, stacking with proper positioning  
-- ESC key support, close button with hover effects
-
-### Service Composition
-Services share DatabaseManager instance:
+### Service Composition Pattern
+All services share a single DatabaseManager instance:
 ```python
 db_manager = DatabaseManager()
 services = {
@@ -231,47 +60,109 @@ services = {
 }
 ```
 
-## Development Commands
+### Environment Switching (OpenAI ↔ Azure)
+Modify only these functions in `meeting_processor.py`:
+- `get_access_token()` - Return None for OpenAI, Azure token for Azure
+- `get_llm()` - Return ChatOpenAI or AzureChatOpenAI with model selection
+- `get_embedding_model()` - Return OpenAIEmbeddings or AzureOpenAIEmbeddings
 
-### Database Inspection
+## Core Components
+
+- **`flask_app.py`** - Main Flask application with blueprints
+- **`meeting_processor.py`** - Global AI variables: `access_token`, `embedding_model`, `llm`, model switching
+- **`src/database/`** - DatabaseManager (SQLite + FAISS hybrid)
+- **`src/services/`** - Business logic services  
+- **`src/api/`** - Flask blueprints for routes
+- **`src/ai/`** - LLM operations and enhanced query processing
+- **`azure_meeting_processor_reference.py`** - Azure deployment variant with GPT-5/GPT-4.1
+
+## Database Architecture
+
+**Hybrid Storage:**
+- `meeting_documents.db` - SQLite for metadata, users, projects
+- `vector_index.faiss` - FAISS for semantic embeddings (auto-rebuilds if deleted)
+- `sessions.db` - Session storage
+
+**Access Pattern:**
+```python
+db_manager = DatabaseManager()
+documents = db_manager.get_all_documents(user_id)
+```
+
+## Model Selection System
+
+Dynamic LLM switching with organization models:
+- **Models:** GPT-5, GPT-4.1 in `AVAILABLE_MODELS` dict
+- **API:** `/api/model/available`, `/api/model/current`, `/api/model/switch`
+- **Functions:** `set_current_model()`, `get_current_model_name()`, `get_current_model_config()`
+- **Persistence:** localStorage saves user preference
+
+## Processing Pipeline
+
+1. **Upload:** File validation → SHA-256 deduplication → Content extraction
+2. **AI Analysis:** LLM metadata extraction (topics, participants, decisions)
+3. **Chunking:** RecursiveCharacterTextSplitter (1000 chars, 200 overlap)
+4. **Embedding:** text-embedding-3-large → FAISS storage
+5. **Background:** ThreadPoolExecutor with job tracking
+
+## Frontend Architecture
+
+- **Main:** `static/script.js` - Core application logic
+- **Config:** `static/js/config.js` - Base path management
+- **Mentions:** `static/js/modules/mentions.js` - Advanced filtering (@project, @meeting, @date, #folder)
+- **Model UI:** Real-time model switching with visual feedback
+
+## IIS Deployment
+
+**web.config requirements:**
+- WSGI Handler: `flask_app.app`
+- Base Path: `/meetingsai` via `BASE_PATH` env var
+- FastCGI for Windows IIS deployment
+
+## Key Features
+
+### Default Project Upload Confirmation
+- Modal for "Default Project" or empty selection
+- "Continue Upload" button color: `#FF612B`
+- ESC/outside click to close
+
+### Enhanced Search Processing
+ChatService uses enhanced processing for:
+- Queries expecting 10+ documents
+- Complex multi-meeting summaries
+- Date range queries
+- Project-wide analysis
+
+## Performance Optimizations
+
+- **Vector Batch Processing:** 100 vectors/batch for memory efficiency
+- **Tiktoken Cache:** Directory at `tiktoken_cache/`
+- **SQLite WAL Mode:** Connection pooling
+- **Session Backend:** Custom SQLite for IIS compatibility
+
+## Troubleshooting
+
 ```bash
-# Basic database checks
-sqlite3 meeting_documents.db "SELECT COUNT(*) FROM documents;"
-python -c "import faiss; print(f'Vectors: {faiss.read_index('vector_index.faiss').ntotal}')"
+# Vector database sync issues
+rm vector_index.faiss  # Forces rebuild on restart
 
-# Validate environment setup
+# Check environment setup
 python -c "
-from meeting_processor import access_token, embedding_model, llm, get_current_model_name
+from meeting_processor import llm, embedding_model, get_current_model_name
 print(f'LLM: {\"✓\" if llm else \"✗\"}')
 print(f'Embedding: {\"✓\" if embedding_model else \"✗\"}')
 print(f'Current Model: {get_current_model_name()}')"
+
+# Database inspection
+sqlite3 meeting_documents.db "SELECT COUNT(*) FROM documents;"
+python -c "import faiss; print(f'Vectors: {faiss.read_index(\"vector_index.faiss\").ntotal}')"
 ```
 
-### Testing Model Features
-```bash
-# Test model switching in browser console
-# Open browser dev tools and run:
-testModelFeatures()   # Comprehensive model functionality test
-testModelAPI()        # API endpoints test
-```
+## Logs
+- `logs/flask_app.log` - Application logs
+- `logs/meeting_processor.log` - LLM initialization logs
 
-## Processing Strategy
-
-### Dual Processing (Enhanced vs Legacy)
-`ChatService` uses enhanced processing for:
-- Queries expecting 10+ documents
-- Complex multi-meeting summaries
-- Date range queries spanning multiple meetings
-- Project-wide analysis requests
-
-Legacy processing for:
-- Simple document lookups
-- Single meeting questions
-
-### Model Confirmation & Response Tracking
-All chat responses include model identification:
-- **Backend:** Chat API includes `model_info` in JSON response
-- **Frontend:** Messages display `🤖 [Model Name]` indicator
-- **Persistence:** Model info saved in conversation history
-- **Validation:** Users can verify which model generated each response
-
+## Additional Documentation
+- **Azure Deployment:** See `AZURE_DEPLOYMENT_GUIDE.md` for Azure OpenAI setup
+- **Architecture:** See `AZURE_ARCHITECTURE_OVERVIEW.md` for cloud migration plans
+- **Token Optimization:** See `MEETINGS_AI_TOKEN_OPTIMIZATION_REPORT.md` for efficiency analysis
