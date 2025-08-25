@@ -2928,3 +2928,25 @@ html, body {
         gap: 6px;
     }
 }
+
+/* Custom Instructions Styles */
+#custom-instructions-btn.active {
+    background-color: #D9F6FA !important;
+    border-color: #002677 !important;
+}
+
+/* Template button hover effects */
+#instructions-modal button[onclick*="useTemplate"]:hover {
+    background-color: #D9F6FA !important;
+    border-color: #002677 !important;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Save/Delete button hover effects */
+#instructions-modal button[onclick*="save"]:hover,
+#instructions-modal button[onclick*="delete"]:hover {
+    background-color: #FAF8F2 !important;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}

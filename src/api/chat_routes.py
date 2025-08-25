@@ -36,6 +36,7 @@ def create_chat_blueprint(base_path: str, chat_service: ChatService) -> Blueprin
             meeting_ids = data.get('meeting_ids', None)
             date_filters = data.get('date_filters', None)
             folder_path = data.get('folder_path', None)
+            custom_instructions = data.get('custom_instructions', None)
             
             # ===== DEBUG LOGGING: QUERY ENTRY POINT =====
             logger.info("=" * 80)
@@ -50,6 +51,7 @@ def create_chat_blueprint(base_path: str, chat_service: ChatService) -> Blueprin
             logger.info(f"   - Meeting IDs: {meeting_ids}")
             logger.info(f"   - Date Filters: {date_filters}")
             logger.info(f"   - Folder Path: {folder_path}")
+            logger.info(f"   - Custom Instructions: {'Yes' if custom_instructions else 'No'}")
             logger.info("[START] Starting query processing pipeline...")
             
             if not message:
@@ -80,7 +82,8 @@ def create_chat_blueprint(base_path: str, chat_service: ChatService) -> Blueprin
                 project_ids=project_ids,
                 meeting_ids=meeting_ids,
                 date_filters=date_filters,
-                folder_path=folder_path
+                folder_path=folder_path,
+                custom_instructions=custom_instructions
             )
             
             # ===== DEBUG LOGGING: FINAL RESPONSE =====

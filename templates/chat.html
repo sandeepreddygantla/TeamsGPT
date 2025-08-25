@@ -90,6 +90,7 @@
                     <button class="icon-btn" title="Upload Documents" onclick="showUploadModal()">📁</button>
                     <button class="icon-btn" title="Manage Documents" onclick="showDocumentManagement()">🧹</button>
                     <button class="icon-btn" title="Statistics" onclick="showStats()">📊</button>
+                    <button class="icon-btn" id="custom-instructions-btn" title="Custom Instructions" onclick="showInstructionsModal()">🎯</button>
                     <button class="icon-btn" title="Help" onclick="showHelp()">❓</button>
                     <button class="icon-btn" title="Refresh" onclick="refreshSystem()">🔄</button>
                     <button class="icon-btn" title="Logout" onclick="logout()" id="logout-btn" style="display: none;">🚪</button>
@@ -175,6 +176,98 @@
                 <button class="btn btn-primary" id="process-btn" onclick="processFiles()" disabled>
                     Process Files
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Instructions Modal -->
+    <div class="modal" id="instructions-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <div class="modal-title">🎯 Custom Instructions</div>
+                <button class="close-btn" onclick="hideInstructionsModal()">×</button>
+            </div>
+            
+            <div style="padding: 20px;">
+                <!-- Enable Toggle -->
+                <div style="margin-bottom: 20px; padding: 15px; background-color: #FAF8F2; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="enable-instructions" style="margin-right: 10px; transform: scale(1.2);">
+                        <span style="font-weight: 500;">Enable Custom Instructions</span>
+                    </label>
+                    <div id="instructions-status" style="margin-top: 10px; font-size: 14px; color: #4B4D4F;"></div>
+                </div>
+                
+                <!-- Quick Templates -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: #002677;">Quick Templates</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <button onclick="useTemplate('actions')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">✓</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Action Items</div>
+                        </button>
+                        <button onclick="useTemplate('decisions')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">💼</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Decisions</div>
+                        </button>
+                        <button onclick="useTemplate('summary')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">📝</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Summary</div>
+                        </button>
+                        <button onclick="useTemplate('speakers')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">👥</div>
+                            <div style="font-size: 12px; margin-top: 4px;">By Speaker</div>
+                        </button>
+                        <button onclick="useTemplate('technical')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">⚙️</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Technical</div>
+                        </button>
+                        <button onclick="useTemplate('timeline')" style="padding: 10px; border: 1px solid #4B4D4F; background: #FFFFFF; border-radius: 8px; cursor: pointer;">
+                            <div style="font-size: 18px;">📅</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Timeline</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Custom Instructions Input -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: #002677;">Custom Instructions</h4>
+                    <textarea id="custom-instructions-text" rows="5" 
+                        style="width: 100%; padding: 10px; border: 1px solid #4B4D4F; border-radius: 8px; font-family: inherit; resize: vertical;"
+                        placeholder="Enter your custom instructions...&#10;&#10;Example:&#10;- Focus only on action items&#10;- Include owner and deadline for each&#10;- Format as a numbered list"></textarea>
+                </div>
+                
+                <!-- Storage Options -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: #002677;">Storage</h4>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+                            <input type="radio" name="instruction-persist" value="session" checked style="margin-right: 8px;">
+                            <span>This session only (until browser closes)</span>
+                        </label>
+                        <label style="display: block; cursor: pointer;">
+                            <input type="radio" name="instruction-persist" value="permanent" style="margin-right: 8px;">
+                            <span>Save permanently (in this browser)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Saved Instructions -->
+                <div id="saved-instructions-section" style="margin-bottom: 20px; padding-top: 15px; border-top: 1px solid #D9F6FA;">
+                    <h4 style="margin-bottom: 10px; color: #002677;">Saved Instructions</h4>
+                    <select id="saved-instructions-list" onchange="loadSavedInstruction()" style="width: 100%; padding: 8px; border: 1px solid #4B4D4F; border-radius: 4px; margin-bottom: 10px;">
+                        <option value="">Select a saved instruction...</option>
+                    </select>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="saveCurrentInstruction()" style="flex: 1; padding: 8px; border: 1px solid #4B4D4F; border-radius: 4px; background: #D9F6FA; cursor: pointer;">💾 Save Current</button>
+                        <button onclick="deleteSelectedInstruction()" style="flex: 1; padding: 8px; border: 1px solid #4B4D4F; border-radius: 4px; background: #FFFFFF; cursor: pointer;">🗑️ Delete</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; border-top: 1px solid #D9F6FA; text-align: right;">
+                <button class="btn btn-secondary" onclick="hideInstructionsModal()" style="margin-right: 10px;">Cancel</button>
+                <button class="btn btn-primary" onclick="applyInstructions()" style="background-color: #FF612B; border-color: #FF612B;">Apply Instructions</button>
             </div>
         </div>
     </div>

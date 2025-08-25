@@ -37,6 +37,22 @@ let availableModels = [];
 let currentModel = null;
 let isModelDropdownOpen = false;
 
+// Custom instructions variables
+let customInstructions = {
+    enabled: false,
+    text: null
+};
+
+// Instruction templates
+const INSTRUCTION_TEMPLATES = {
+    actions: "Only show action items. For each action, include: what needs to be done, who is responsible, deadline if mentioned. Format as a checklist.",
+    decisions: "Only show decisions made. Include: what was decided, who made the decision, and any rationale provided.",
+    summary: "Provide a brief 3-5 bullet point summary of the most important information only.",
+    speakers: "Organize response by speaker. Show what each person said and their contributions.",
+    technical: "Focus on technical details, specifications, and implementation details only.",
+    timeline: "Organize information chronologically. Show when things happened or will happen."
+};
+
 // Configure marked.js for robust Markdown parsing
 function initializeMarkdownParser() {
     if (typeof marked !== 'undefined') {
@@ -233,6 +249,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize markdown parser
     initializeMarkdownParser();
     
+    // Load custom instructions state
+    loadInstructionsState();
+    
     // Check authentication status first
     checkAuthenticationStatus();
     
@@ -390,6 +409,177 @@ function clearMessagesArea() {
     if (welcomeScreen) {
         welcomeScreen.style.display = 'none';
     }
+}
+
+// Custom Instructions Functions
+function showInstructionsModal() {
+    const modal = document.getElementById('instructions-modal');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    loadInstructionsState();
+}
+
+function hideInstructionsModal() {
+    const modal = document.getElementById('instructions-modal');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+}
+
+function loadInstructionsState() {
+    // Load from storage
+    const sessionData = sessionStorage.getItem('customInstructions');
+    const localData = localStorage.getItem('customInstructions');
+    
+    if (sessionData) {
+        const data = JSON.parse(sessionData);
+        customInstructions = data;
+    } else if (localData) {
+        const data = JSON.parse(localData);
+        customInstructions = data;
+    }
+    
+    // Update UI
+    document.getElementById('enable-instructions').checked = customInstructions.enabled;
+    document.getElementById('custom-instructions-text').value = customInstructions.text || '';
+    
+    // Update status
+    updateInstructionsStatus();
+    updateInstructionsIcon();
+    
+    // Load saved instructions list
+    loadSavedInstructionsList();
+}
+
+function updateInstructionsStatus() {
+    const statusDiv = document.getElementById('instructions-status');
+    if (customInstructions.enabled && customInstructions.text) {
+        const preview = customInstructions.text.substring(0, 80);
+        statusDiv.innerHTML = `<strong>Active:</strong> ${preview}${customInstructions.text.length > 80 ? '...' : ''}`;
+        statusDiv.style.color = '#002677';
+    } else {
+        statusDiv.innerHTML = 'No active instructions';
+        statusDiv.style.color = '#4B4D4F';
+    }
+}
+
+function updateInstructionsIcon() {
+    const btn = document.getElementById('custom-instructions-btn');
+    if (customInstructions.enabled && customInstructions.text) {
+        btn.style.backgroundColor = '#D9F6FA';
+        btn.title = 'Custom Instructions: Active';
+    } else {
+        btn.style.backgroundColor = '';
+        btn.title = 'Custom Instructions';
+    }
+}
+
+function useTemplate(templateKey) {
+    if (INSTRUCTION_TEMPLATES[templateKey]) {
+        document.getElementById('custom-instructions-text').value = INSTRUCTION_TEMPLATES[templateKey];
+        document.getElementById('enable-instructions').checked = true;
+        showNotification(`Template applied: ${templateKey}`, 'info');
+    }
+}
+
+function applyInstructions() {
+    const enabled = document.getElementById('enable-instructions').checked;
+    const text = document.getElementById('custom-instructions-text').value.trim();
+    const persistence = document.querySelector('input[name="instruction-persist"]:checked').value;
+    
+    customInstructions = { enabled, text };
+    
+    // Save to storage
+    const data = JSON.stringify(customInstructions);
+    if (persistence === 'permanent') {
+        localStorage.setItem('customInstructions', data);
+        // Remove from session storage
+        sessionStorage.removeItem('customInstructions');
+    } else {
+        sessionStorage.setItem('customInstructions', data);
+        // Remove from local storage if switching to session
+        localStorage.removeItem('customInstructions');
+    }
+    
+    updateInstructionsStatus();
+    updateInstructionsIcon();
+    hideInstructionsModal();
+    
+    if (enabled && text) {
+        showNotification('Custom instructions applied', 'success');
+    } else {
+        showNotification('Custom instructions disabled', 'info');
+    }
+}
+
+function saveCurrentInstruction() {
+    const text = document.getElementById('custom-instructions-text').value.trim();
+    if (!text) {
+        showNotification('No instructions to save', 'warning');
+        return;
+    }
+    
+    const name = prompt('Name this instruction template:');
+    if (!name) return;
+    
+    // Get existing saved instructions
+    let saved = JSON.parse(localStorage.getItem('savedInstructionsList') || '[]');
+    
+    const instruction = {
+        id: Date.now(),
+        name: name,
+        text: text,
+        created: new Date().toISOString()
+    };
+    
+    saved.push(instruction);
+    localStorage.setItem('savedInstructionsList', JSON.stringify(saved));
+    
+    loadSavedInstructionsList();
+    showNotification('Instruction saved to library', 'success');
+}
+
+function loadSavedInstruction() {
+    const select = document.getElementById('saved-instructions-list');
+    const id = parseInt(select.value);
+    if (!id) return;
+    
+    const saved = JSON.parse(localStorage.getItem('savedInstructionsList') || '[]');
+    const instruction = saved.find(i => i.id === id);
+    if (instruction) {
+        document.getElementById('custom-instructions-text').value = instruction.text;
+        showNotification(`Loaded: ${instruction.name}`, 'info');
+    }
+}
+
+function deleteSelectedInstruction() {
+    const select = document.getElementById('saved-instructions-list');
+    const id = parseInt(select.value);
+    if (!id) return;
+    
+    let saved = JSON.parse(localStorage.getItem('savedInstructionsList') || '[]');
+    const index = saved.findIndex(i => i.id === id);
+    if (index > -1) {
+        const name = saved[index].name;
+        if (confirm(`Delete "${name}"?`)) {
+            saved.splice(index, 1);
+            localStorage.setItem('savedInstructionsList', JSON.stringify(saved));
+            loadSavedInstructionsList();
+            showNotification('Instruction deleted', 'info');
+        }
+    }
+}
+
+function loadSavedInstructionsList() {
+    const select = document.getElementById('saved-instructions-list');
+    const saved = JSON.parse(localStorage.getItem('savedInstructionsList') || '[]');
+    
+    select.innerHTML = '<option value="">Select a saved instruction...</option>';
+    saved.forEach(instruction => {
+        const option = document.createElement('option');
+        option.value = instruction.id;
+        option.textContent = instruction.name;
+        select.appendChild(option);
+    });
 }
 
 // Updated loadConversationUI function with better error handling
@@ -578,6 +768,11 @@ async function sendMessage() {
         }
         if (folderPath) {
             requestBody.folder_path = folderPath;
+        }
+        
+        // Add custom instructions if enabled
+        if (customInstructions.enabled && customInstructions.text) {
+            requestBody.custom_instructions = customInstructions.text;
         }
         
         const response = await fetch('/meetingsai/api/chat', {

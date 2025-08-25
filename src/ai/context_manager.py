@@ -56,13 +56,15 @@ class EnhancedContextManager:
         
     def process_enhanced_query(
         self,
-        query_context: QueryContext
+        query_context: QueryContext,
+        custom_instructions: Optional[str] = None
     ) -> Tuple[str, List[str], str]:
         """
         Process query with enhanced context management and routing.
         
         Args:
             query_context: Structured query context
+            custom_instructions: Optional custom instructions for response formatting
             
         Returns:
             Tuple of (response, follow_up_questions, timestamp)
@@ -79,13 +81,13 @@ class EnhancedContextManager:
             
             # Handle different query types
             if routing_decision == 'no_filters_comprehensive':
-                return self._handle_comprehensive_all_meetings(query_context)
+                return self._handle_comprehensive_all_meetings(query_context, custom_instructions)
             elif routing_decision == 'filtered_comprehensive':
-                return self._handle_filtered_comprehensive(query_context)
+                return self._handle_filtered_comprehensive(query_context, custom_instructions)
             elif routing_decision == 'targeted_query':
-                return self._handle_targeted_query(query_context)
+                return self._handle_targeted_query(query_context, custom_instructions)
             else:
-                return self._handle_general_query(query_context)
+                return self._handle_general_query(query_context, custom_instructions)
                 
         except Exception as e:
             logger.error(f"[ERROR] Enhanced query processing failed: {e}")
@@ -261,7 +263,7 @@ class EnhancedContextManager:
             logger.error(f"[ERROR] Targeted query processing failed: {e}")
             return f"I encountered an error while processing your targeted query: {str(e)}", [], datetime.now().isoformat()
     
-    def _handle_general_query(self, query_context: QueryContext) -> Tuple[str, List[str], str]:
+    def _handle_general_query(self, query_context: QueryContext, custom_instructions: Optional[str] = None) -> Tuple[str, List[str], str]:
         """Handle general queries with standard processing."""
         logger.info("[GENERAL] Handling general query")
         

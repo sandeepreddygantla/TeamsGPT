@@ -205,6 +205,7 @@ CITATION FORMAT EXAMPLES:
         self,
         query: str,
         context_chunks: List[Dict[str, Any]],
+        custom_instructions: Optional[str] = None,
         additional_metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
@@ -213,6 +214,7 @@ CITATION FORMAT EXAMPLES:
         Args:
             query: User query
             context_chunks: Context chunks with metadata
+            custom_instructions: Optional custom instructions for response formatting
             additional_metadata: Additional metadata for template variables
             
         Returns:
@@ -234,7 +236,7 @@ CITATION FORMAT EXAMPLES:
             'document_count': len(included_documents),
             'date_range': self._get_date_range_text(context_chunks),
             'context_instructions': self._get_context_instructions(is_summary, is_comprehensive),
-            'response_instructions': self._get_response_instructions(query, is_summary),
+            'response_instructions': self._get_custom_or_default_instructions(query, is_summary, custom_instructions),
             'format_instructions': self._get_format_instructions(query)
         }
         
@@ -346,4 +348,16 @@ CITATION FORMAT EXAMPLES:
                 formatted_sections.append(section)
         
         return "\n\n".join(formatted_sections)
+    
+    def _get_custom_or_default_instructions(self, query: str, is_summary: bool, custom_instructions: Optional[str]) -> str:
+        """Get custom instructions if provided, otherwise use defaults."""
+        if custom_instructions:
+            return f"""USER'S SPECIFIC INSTRUCTIONS:
+{custom_instructions}
+
+Please follow these specific instructions while maintaining accuracy and proper citation of sources.
+
+{self._get_response_instructions(query, is_summary)}"""
+        else:
+            return self._get_response_instructions(query, is_summary)
     

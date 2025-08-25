@@ -166,3 +166,9 @@ python -c "import faiss; print(f'Vectors: {faiss.read_index(\"vector_index.faiss
 - **Azure Deployment:** See `AZURE_DEPLOYMENT_GUIDE.md` for Azure OpenAI setup
 - **Architecture:** See `AZURE_ARCHITECTURE_OVERVIEW.md` for cloud migration plans
 - **Token Optimization:** See `MEETINGS_AI_TOKEN_OPTIMIZATION_REPORT.md` for efficiency analysis
+- always use the given color palltes only for our tools designs and no gradient colors only one of this colors #FF612B
+#FAF8F2
+#D9F6FA
+#002677
+#4B4D4F
+#FFFFFF and also when test or runing the python code actiavte the venv in the project folder ./venv/Scripts/python.exe or ./venv/Scripts/actiavte. and when trying to visit the tool via playwright use this url to access the tool because we use wsl so not able to access the windows localhost ports directly http://192.168.1.153:5000/meetingsai or http://172.29.144.1:5000/meetingsai

@@ -45,7 +45,8 @@ class ChatService:
         project_ids: Optional[List[str]] = None,
         meeting_ids: Optional[List[str]] = None,
         date_filters: Optional[Dict[str, Any]] = None,
-        folder_path: Optional[str] = None
+        folder_path: Optional[str] = None,
+        custom_instructions: Optional[str] = None
     ) -> Tuple[str, List[str], str]:
         """
         Process a chat query and generate AI response.
@@ -59,6 +60,7 @@ class ChatService:
             meeting_ids: Optional list of meeting IDs to filter
             date_filters: Optional date filters
             folder_path: Optional folder path filter
+            custom_instructions: Optional custom instructions for response formatting
             
         Returns:
             Tuple of (response, follow_up_questions, timestamp)
@@ -75,6 +77,7 @@ class ChatService:
             logger.info(f"   - meeting_ids: {meeting_ids}")
             logger.info(f"   - date_filters: {date_filters}")
             logger.info(f"   - folder_path: {folder_path}")
+            logger.info(f"   - custom_instructions: {'Yes' if custom_instructions else 'No'}")
             
             # Check if documents are available
             logger.info("[STEP1] Checking vector database status...")
@@ -104,13 +107,13 @@ class ChatService:
                     logger.info("[ENHANCED] Using enhanced context processing")
                     response, follow_up_questions = self._process_with_enhanced_context(
                         message, user_id, document_ids, project_id, project_ids, 
-                        meeting_ids, date_filters, folder_path
+                        meeting_ids, date_filters, folder_path, custom_instructions
                     )
                 else:
                     logger.info("[LEGACY] Using legacy processor for query processing")
                     response, follow_up_questions = self._process_with_legacy_processor(
                         message, user_id, document_ids, project_id, project_ids,
-                        meeting_ids, date_filters, folder_path
+                        meeting_ids, date_filters, folder_path, custom_instructions
                     )
             
             timestamp = datetime.now().isoformat()
@@ -423,7 +426,8 @@ class ChatService:
         project_ids: Optional[List[str]] = None,
         meeting_ids: Optional[List[str]] = None,
         date_filters: Optional[Dict[str, Any]] = None,
-        folder_path: Optional[str] = None
+        folder_path: Optional[str] = None,
+        custom_instructions: Optional[str] = None
     ) -> Tuple[str, List[str]]:
         """
         Process query using enhanced context management.
@@ -472,7 +476,9 @@ class ChatService:
                 )
                 
                 # Process with enhanced context manager
-                response, follow_up_questions, _ = self.enhanced_context_manager.process_enhanced_query(query_context)
+                response, follow_up_questions, _ = self.enhanced_context_manager.process_enhanced_query(
+                    query_context, custom_instructions=custom_instructions
+                )
                 
                 logger.info(f"[ENHANCED] Document-specific processing completed:")
                 logger.info(f"  - Response length: {len(response)} characters")
@@ -520,7 +526,9 @@ class ChatService:
             )
             
             # Process with enhanced context manager
-            response, follow_up_questions, _ = self.enhanced_context_manager.process_enhanced_query(query_context)
+            response, follow_up_questions, _ = self.enhanced_context_manager.process_enhanced_query(
+                query_context, custom_instructions=custom_instructions
+            )
             
             logger.info(f"[ENHANCED] Enhanced processing completed:")
             logger.info(f"  - Response length: {len(response)} characters")
@@ -545,7 +553,8 @@ class ChatService:
         project_ids: Optional[List[str]] = None,
         meeting_ids: Optional[List[str]] = None,
         date_filters: Optional[Dict[str, Any]] = None,
-        folder_path: Optional[str] = None
+        folder_path: Optional[str] = None,
+        custom_instructions: Optional[str] = None
     ) -> Tuple[str, List[str]]:
         """
         Process query using legacy processor.
